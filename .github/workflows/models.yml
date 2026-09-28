@@ -1,0 +1,35 @@
+# Integration tests against real Essentia and the pretrained models (heavy; ~300 MB).
+name: Models
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - backend/src/moody/analysis/**
+      - backend/tests/test_essentia.py
+      - backend/tests/audio.py
+      - .github/workflows/models.yml
+
+jobs:
+  models:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      MOODY_MODELS_DIR: ${{ github.workspace }}/.models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/cache@v4
+        with:
+          path: .models
+          key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
+      - run: uv sync --frozen --extra analysis
+      - run: uv run moody -v models pull --dir "$MOODY_MODELS_DIR"
+      - run: uv run pytest tests/test_essentia.py -m "models or not models" -v

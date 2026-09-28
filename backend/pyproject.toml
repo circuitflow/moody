@@ -57,3 +57,7 @@ packages = ["moody"]
 testpaths = ["tests"]
 markers = ["models: requires essentia-tensorflow and downloaded models (slow)"]
 addopts = "-m 'not models'"
+
+[[tool.mypy.overrides]]
+module = ["essentia", "essentia.*", "soundfile", "mutagen", "mutagen.*"]
+ignore_missing_imports = true
