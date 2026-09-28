@@ -28,7 +28,7 @@ Moody began as a 2007 Python thesis project that estimated the mood of songs in 
 - **Spotify API (Nov 2024):** new apps lost access to `audio-features`, `audio-analysis`, recommendations and 30 s previews. Spotify is therefore used only for *identity* (search, ISRC), *history* (recently played, top tracks) and *output* (playlist creation). Apps in development mode are limited to 25 allow-listed users, which is acceptable for self-hosting.
 - **Audio availability:** analysis runs only where we have audio: the user's local library when self-hosting, or CC-licensed Jamendo audio for the public demo.
 - **Essentia:** `essentia-tensorflow==2.1b6.dev1389` ships wheels for CPython 3.9–3.13 on Linux x86_64 and macOS. Moody targets **Python 3.13**.
-- **Licensing:** Essentia is AGPL-3.0, and the Essentia pretrained models are CC BY-NC-SA 4.0 (non-commercial). This fits an open-source portfolio project. See §13 for the repository license decision.
+- **Licensing:** Essentia is AGPL-3.0, and the Essentia pretrained models are CC BY-NC-SA 4.0 (non-commercial). This fits an open-source portfolio project, and Moody itself is AGPL-3.0-or-later (§13).
 
 ## 4. User-facing features
 
@@ -173,7 +173,7 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
   - pytest with unit, integration (marker `models`, real Essentia, run in a separate CI job with cached models) and API tests (httpx `TestClient`).
 - **Frontend:** `tsc --noEmit`, eslint, vitest + Testing Library, and a Playwright smoke test against the static demo build.
 - **CI:** GitHub Actions jobs `backend`, `frontend`, `models` (scheduled and manual; heavy) and `pages`.
-- **Repository license (decision needed):** AGPL-3.0 is recommended for consistency with Essentia. MIT for Moody's own code is possible too, with a note that Essentia and model licenses apply to distributions. The README carries model and dataset attributions either way.
+- **Repository license:** AGPL-3.0-or-later (decided 2026-09-28), for consistency with Essentia. The README carries model and dataset attributions, and the non-commercial model license is called out.
 
 ## 14. Risks
 

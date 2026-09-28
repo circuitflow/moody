@@ -57,3 +57,9 @@ Your library is mounted read-only.
 
 - [Essentia](https://essentia.upf.edu/) (AGPL-3.0) and the Essentia pretrained models (CC BY-NC-SA 4.0), from the Music Technology Group, Universitat Pompeu Fabra.
 - Valence/arousal heads trained on [DEAM](https://cvml.unige.ch/databases/DEAM/); mood/theme tags from [MTG-Jamendo](https://mtg.github.io/mtg-jamendo-dataset/).
+
+## License
+
+Moody is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE), in line with
+Essentia's AGPL-3.0. The Essentia pretrained models are separately licensed under CC BY-NC-SA 4.0
+(non-commercial).
