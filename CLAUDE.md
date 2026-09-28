@@ -9,7 +9,6 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
   Tests that need real models are marked `@pytest.mark.models` and are skipped by default; run with `-m models`.
 - Frontend (run in `frontend/`): `npm ci`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`
 - Static demo build: `VITE_DATA_SOURCE=static VITE_BASE=/moody/ npm run build`
-
 - After changing API routes or schemas: `uv run moody openapi ../frontend/openapi.json` (CI fails if stale).
 - Local end-to-end without models: `uv run moody scan <folder> --fake`, then `uv run moody serve`.
 
