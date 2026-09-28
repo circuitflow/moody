@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Local data and secrets
+.env
+*.db
+*.db-*
+/music/
+eval/data/
+demo/build/
+
+.DS_Store

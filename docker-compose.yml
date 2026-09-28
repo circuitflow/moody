@@ -1,0 +1,21 @@
+# Self-hosted Moody. Point MOODY_LIBRARY at your music folder, then:
+#   MOODY_LIBRARY=~/Music docker compose up --build
+# and open http://localhost:8080
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ${MOODY_LIBRARY:-./music}:/music:ro
+      - moody-data:/data
+      - moody-models:/models
+    ports:
+      - "127.0.0.1:8000:8000"
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports:
+      - "127.0.0.1:8080:80"
+
+volumes:
+  moody-data:
+  moody-models:
