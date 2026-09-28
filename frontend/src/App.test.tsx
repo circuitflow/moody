@@ -25,3 +25,10 @@ test("reports an unavailable backend", async () => {
   renderWith({ kind: "api", health: () => Promise.reject(new Error("down")) });
   expect(await screen.findByText("Backend unavailable")).toBeInTheDocument();
 });
+
+test("labels the eight thesis octants", async () => {
+  renderWith({ kind: "api", health: async () => ({ status: "ok", version: "1" }) });
+  for (const label of ["Pleasure", "Excitement", "Arousal", "Distress", "Displeasure", "Depression", "Sleepiness", "Relaxation"]) {
+    expect(screen.getByText(label)).toBeInTheDocument();
+  }
+});

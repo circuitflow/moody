@@ -1,0 +1,376 @@
+[
+ {
+  "features": [
+   75,
+   90,
+   60,
+   80,
+   75
+  ],
+  "octant": 1,
+  "adjective": "joyous"
+ },
+ {
+  "features": [
+   75,
+   90,
+   60,
+   80,
+   25
+  ],
+  "octant": 7,
+  "adjective": "graceful"
+ },
+ {
+  "features": [
+   75,
+   90,
+   60,
+   30,
+   75
+  ],
+  "octant": 1,
+  "adjective": "bright"
+ },
+ {
+  "features": [
+   75,
+   90,
+   60,
+   30,
+   25
+  ],
+  "octant": 1,
+  "adjective": "cheerful"
+ },
+ {
+  "features": [
+   75,
+   90,
+   20,
+   80,
+   75
+  ],
+  "octant": 5,
+  "adjective": "solemn"
+ },
+ {
+  "features": [
+   75,
+   90,
+   20,
+   80,
+   25
+  ],
+  "octant": 7,
+  "adjective": "delicate"
+ },
+ {
+  "features": [
+   75,
+   90,
+   20,
+   30,
+   75
+  ],
+  "octant": 1,
+  "adjective": "happy"
+ },
+ {
+  "features": [
+   75,
+   90,
+   20,
+   30,
+   25
+  ],
+  "octant": 7,
+  "adjective": "serene"
+ },
+ {
+  "features": [
+   75,
+   50,
+   60,
+   80,
+   75
+  ],
+  "octant": 2,
+  "adjective": "triumphant"
+ },
+ {
+  "features": [
+   75,
+   50,
+   60,
+   80,
+   25
+  ],
+  "octant": 5,
+  "adjective": "spiritual"
+ },
+ {
+  "features": [
+   75,
+   50,
+   60,
+   30,
+   75
+  ],
+  "octant": 2,
+  "adjective": "exciting"
+ },
+ {
+  "features": [
+   75,
+   50,
+   60,
+   30,
+   25
+  ],
+  "octant": 3,
+  "adjective": "restless"
+ },
+ {
+  "features": [
+   75,
+   50,
+   20,
+   80,
+   75
+  ],
+  "octant": 5,
+  "adjective": "heavy"
+ },
+ {
+  "features": [
+   75,
+   50,
+   20,
+   80,
+   25
+  ],
+  "octant": 5,
+  "adjective": "majestic"
+ },
+ {
+  "features": [
+   75,
+   50,
+   20,
+   30,
+   75
+  ],
+  "octant": 3,
+  "adjective": "angry"
+ },
+ {
+  "features": [
+   75,
+   50,
+   20,
+   30,
+   25
+  ],
+  "octant": 3,
+  "adjective": "tense"
+ },
+ {
+  "features": [
+   25,
+   90,
+   60,
+   80,
+   75
+  ],
+  "octant": 2,
+  "adjective": "sensational"
+ },
+ {
+  "features": [
+   25,
+   90,
+   60,
+   80,
+   25
+  ],
+  "octant": 7,
+  "adjective": "tender"
+ },
+ {
+  "features": [
+   25,
+   90,
+   60,
+   30,
+   75
+  ],
+  "octant": 0,
+  "adjective": "humorous"
+ },
+ {
+  "features": [
+   25,
+   90,
+   60,
+   30,
+   25
+  ],
+  "octant": 0,
+  "adjective": "playful"
+ },
+ {
+  "features": [
+   25,
+   90,
+   20,
+   80,
+   75
+  ],
+  "octant": 5,
+  "adjective": "serious"
+ },
+ {
+  "features": [
+   25,
+   90,
+   20,
+   80,
+   25
+  ],
+  "octant": 7,
+  "adjective": "relaxed"
+ },
+ {
+  "features": [
+   25,
+   90,
+   20,
+   30,
+   75
+  ],
+  "octant": 6,
+  "adjective": "sentimental"
+ },
+ {
+  "features": [
+   25,
+   90,
+   20,
+   30,
+   25
+  ],
+  "octant": 6,
+  "adjective": "dreamy"
+ },
+ {
+  "features": [
+   25,
+   50,
+   60,
+   80,
+   75
+  ],
+  "octant": 2,
+  "adjective": "exhilarated"
+ },
+ {
+  "features": [
+   25,
+   50,
+   60,
+   80,
+   25
+  ],
+  "octant": 2,
+  "adjective": "soaring"
+ },
+ {
+  "features": [
+   25,
+   50,
+   60,
+   30,
+   75
+  ],
+  "octant": 5,
+  "adjective": "vigorous"
+ },
+ {
+  "features": [
+   25,
+   50,
+   60,
+   30,
+   25
+  ],
+  "octant": 3,
+  "adjective": "agitated"
+ },
+ {
+  "features": [
+   25,
+   50,
+   20,
+   80,
+   75
+  ],
+  "octant": 4,
+  "adjective": "tragic"
+ },
+ {
+  "features": [
+   25,
+   50,
+   20,
+   80,
+   25
+  ],
+  "octant": 5,
+  "adjective": "sad"
+ },
+ {
+  "features": [
+   25,
+   50,
+   20,
+   30,
+   75
+  ],
+  "octant": 2,
+  "adjective": "dramatic"
+ },
+ {
+  "features": [
+   25,
+   50,
+   20,
+   30,
+   25
+  ],
+  "octant": 4,
+  "adjective": "yearning"
+ },
+ {
+  "features": [
+   50,
+   75,
+   40,
+   65,
+   50
+  ],
+  "octant": 1,
+  "adjective": "joyous"
+ },
+ {
+  "features": [
+   49.999,
+   74.999,
+   39.999,
+   64.999,
+   49.999
+  ],
+  "octant": 4,
+  "adjective": "yearning"
+ }
+]

@@ -283,6 +283,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "numpy" },
     { name = "pydantic-settings" },
     { name = "typer" },
     { name = "uvicorn", extra = ["standard"] },
@@ -291,7 +292,6 @@ dependencies = [
 [package.optional-dependencies]
 analysis = [
     { name = "essentia-tensorflow" },
-    { name = "numpy" },
 ]
 
 [package.dev-dependencies]
@@ -306,7 +306,7 @@ dev = [
 requires-dist = [
     { name = "essentia-tensorflow", marker = "extra == 'analysis'", specifier = "==2.1b6.dev1389" },
     { name = "fastapi", specifier = ">=0.115" },
-    { name = "numpy", marker = "extra == 'analysis'", specifier = ">=1.26" },
+    { name = "numpy", specifier = ">=1.26" },
     { name = "pydantic-settings", specifier = ">=2.4" },
     { name = "typer", specifier = ">=0.12" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.30" },

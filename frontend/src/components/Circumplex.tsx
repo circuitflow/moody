@@ -1,23 +1,43 @@
-/** Placeholder for the M2 mood map: Russell's valence/arousal circumplex with quadrant labels. */
-const QUADRANTS = [
-  { x: 25, y: 25, label: "tense · angry" },
-  { x: 75, y: 25, label: "happy · excited" },
-  { x: 25, y: 75, label: "sad · gloomy" },
-  { x: 75, y: 75, label: "calm · relaxed" },
+/**
+ * Placeholder for the M2 mood map: Russell's circumplex with the eight octants used by the
+ * 2007 thesis (see legacy/README.md), counter-clockwise from positive valence.
+ */
+const OCTANTS = [
+  "Pleasure",
+  "Excitement",
+  "Arousal",
+  "Distress",
+  "Displeasure",
+  "Depression",
+  "Sleepiness",
+  "Relaxation",
 ] as const;
+
+const R = 38;
 
 export function Circumplex() {
   return (
     <svg className="circumplex" viewBox="0 0 100 100" role="img" aria-label="Valence–arousal mood space">
-      <line x1="0" y1="50" x2="100" y2="50" />
-      <line x1="50" y1="0" x2="50" y2="100" />
-      <text x="98" y="47" textAnchor="end" className="axis">valence →</text>
-      <text x="52" y="4" className="axis">↑ arousal</text>
-      {QUADRANTS.map((q) => (
-        <text key={q.label} x={q.x} y={q.y} textAnchor="middle" className="quadrant">
-          {q.label}
-        </text>
-      ))}
+      <circle cx="50" cy="50" r={R - 8} />
+      <line x1="4" y1="50" x2="96" y2="50" />
+      <line x1="50" y1="4" x2="50" y2="96" />
+      {OCTANTS.map((label, i) => {
+        const theta = (i * Math.PI) / 4;
+        return (
+          <text
+            key={label}
+            x={50 + R * Math.cos(theta)}
+            y={50 - R * Math.sin(theta)}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            className="octant"
+          >
+            {label}
+          </text>
+        );
+      })}
+      <text x="97" y="57" textAnchor="end" className="axis">valence →</text>
+      <text x="52" y="6" className="axis">↑ arousal</text>
     </svg>
   );
 }

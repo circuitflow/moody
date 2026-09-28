@@ -86,6 +86,7 @@ Two embedding extractors are needed. Essentia's pretrained valence/arousal heads
 | 3b. Mood classifiers | `mood_{happy,sad,aggressive,relaxed,party}-discogs-effnet-1.pb`, `output="model/Softmax"` | probability per class |
 | 3c. Mood/theme tags | `mtg_jamendo_moodtheme-discogs-effnet-1.pb` (default output, sigmoid) | 56 tag probabilities |
 | 4. DSP | `RhythmExtractor2013`, `KeyExtractor`, `LoudnessEBUR128` on 44.1 kHz audio | BPM, key/scale, LUFS |
+| 5. Thesis features (2007) | The five thesis features re-derived with Essentia (mode strength from `KeyExtractor`; harmony simplicity as the triad share from `ChordsDetection` over `HPCP`; tempo; rhythm regularity from beat-interval variance + BPM confidence; loudness), then run through the ported 2007 decision tree (`moody.legacy.thesis2007`) | `features_2007`, `octant_2007`, `hevner_2007` |
 
 **M5 showcase item:** train our own V/A regression head on Discogs-EffNet embeddings of DEAM (and PMEmo) with a small PyTorch MLP exported to ONNX. It should beat or match the MusiCNN head in `eval/`, and it would remove the second extractor from the pipeline.
 
@@ -104,7 +105,7 @@ Two embedding extractors are needed. Essentia's pretrained valence/arousal heads
 ## 7. Data model (SQLite)
 
 - `tracks`: id, content_hash (unique), path, title, artist, album, duration_s, isrc, mb_recording_id, file_mtime, added_at
-- `analyses`: track_id (PK/FK), pipeline_version, valence, arousal, bpm, key, scale, loudness_lufs, mood_probs (JSON), tag_probs (JSON), top_tags (text), analyzed_at
+- `analyses`: track_id (PK/FK), pipeline_version, valence, arousal, bpm, key, scale, loudness_lufs, mood_probs (JSON), tag_probs (JSON), top_tags (text), features_2007 (JSON), octant_2007, hevner_2007, analyzed_at
 - `segments`: track_id, idx, start_s, valence, arousal (PK track_id + idx)
 - `embeddings`: track_id, model (`discogs-effnet` | `msd-musicnn`), dim, vector (BLOB float32, mean-pooled)
 - `jobs`: id, kind, status, progress, total, error, created_at, finished_at
@@ -164,7 +165,10 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
   - V/A regression on the DEAM test split: Pearson r, R² and CCC for the chosen head, plus a comparison of the emomusic and DEAM heads.
   - Tag ROC-AUC/PR-AUC on the MTG-Jamendo moodtheme split-0 test set.
   - Results go to `eval/results/*.json`, and a script renders the README table.
-  - **2007 vs 2026:** if the legacy thesis code and data are imported into `legacy/`, rerun its feature set as a baseline on the same split.
+  - **2007 vs 2026** (see `legacy/README.md`):
+    - (a) On the DEAM test split, map ground-truth V/A to Russell octants and compare octant accuracy and mean angular error for the 2007 tree (on Essentia-derived thesis features), the 2007 k-NN, and the 2026 DEAM head.
+    - (b) On the 372-song thesis set, run on the author's Mac where the MP3s are, compare 2007 octants and AMG tags with 2026 V/A and tags.
+    - The 2007 training labels are the tree's own outputs, not human annotations, so they are never treated as ground truth.
 
 ## 13. Quality, CI, licensing
 
@@ -198,7 +202,7 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
 - **M4 (showcase):** demo bundle, Pages deploy, eval report, README with GIFs.
 - **M5 (stretch):** CLAP text search, lyrics fusion, a custom V/A head on EffNet embeddings.
 
-## 16. Open questions
+## 16. Resolved decisions
 
-1. **Legacy code:** the original 2007 thesis code (on the author's Mac) should be imported into `legacy/`, read-only, to recover the thesis mood categories and results for the comparison.
-2. The repository license is still undecided (§13).
+1. **Legacy code:** imported from [circuitflow/moody-2007](https://github.com/circuitflow/moody-2007) at commit `3b58348`. The model is ported to `backend/src/moody/legacy/thesis2007.py` and the training data converted to `legacy/data/`; binaries are not vendored.
+2. **License:** AGPL-3.0-or-later.

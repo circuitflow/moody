@@ -18,5 +18,6 @@ h1 { margin: 0; font-size: 2.25rem; letter-spacing: -0.02em; }
 .circumplex { width: 100%; max-width: 560px; display: block; margin: 0 auto; }
 .circumplex line { stroke: var(--line); stroke-width: 0.3; }
 .circumplex .axis { fill: var(--muted); font-size: 3px; }
-.circumplex .quadrant { fill: var(--accent); font-size: 3.6px; }
+.circumplex circle { fill: none; stroke: var(--line); stroke-width: 0.3; }
+.circumplex .octant { fill: var(--accent); font-size: 3.4px; }
 footer { margin-top: 24px; color: var(--muted); font-size: 0.875rem; }
