@@ -10,6 +10,9 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Frontend (run in `frontend/`): `npm ci`, `npm test`, `npm run lint`, `npm run typecheck`, `npm run build`
 - Static demo build: `VITE_DATA_SOURCE=static VITE_BASE=/moody/ npm run build`
 
+- After changing API routes or schemas: `uv run moody openapi ../frontend/openapi.json` (CI fails if stale).
+- Local end-to-end without models: `uv run moody scan <folder> --fake`, then `uv run moody serve`.
+
 ## Conventions
 - mypy `--strict` and ruff must pass; tests must pass with `-W error`.
 - Frontend components never call `fetch` directly; they go through the `DataSource` interface (`src/data/source.ts`),

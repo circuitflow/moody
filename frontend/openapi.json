@@ -1,0 +1,791 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Moody",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "meta"
+        ],
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tracks": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "List Tracks",
+        "operationId": "list_tracks_api_tracks_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Substring of title, artist or album",
+              "title": "Q"
+            },
+            "description": "Substring of title, artist or album"
+          },
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Only tracks with this top tag",
+              "title": "Tag"
+            },
+            "description": "Only tracks with this top tag"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(pending|analyzed|failed)$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackPage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/tracks/{track_id}": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Get Track",
+        "operationId": "get_track_api_tracks__track_id__get",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrackDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/map": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Mood Map",
+        "operationId": "mood_map_api_map_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoodMap"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Features2007Out": {
+        "properties": {
+          "mode": {
+            "type": "number",
+            "title": "Mode"
+          },
+          "harmony": {
+            "type": "number",
+            "title": "Harmony"
+          },
+          "tempo": {
+            "type": "number",
+            "title": "Tempo"
+          },
+          "rhythm": {
+            "type": "number",
+            "title": "Rhythm"
+          },
+          "loudness": {
+            "type": "number",
+            "title": "Loudness"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mode",
+          "harmony",
+          "tempo",
+          "rhythm",
+          "loudness"
+        ],
+        "title": "Features2007Out"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "version"
+        ],
+        "title": "Health"
+      },
+      "MoodMap": {
+        "properties": {
+          "id": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Id"
+          },
+          "valence": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Valence"
+          },
+          "arousal": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Arousal"
+          },
+          "octant": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Octant"
+          },
+          "tag": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Tag"
+          },
+          "title": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Title"
+          },
+          "artist": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Artist"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "valence",
+          "arousal",
+          "octant",
+          "tag",
+          "title",
+          "artist"
+        ],
+        "title": "MoodMap",
+        "description": "Columnar arrays (one entry per analyzed track) to keep large maps compact."
+      },
+      "SegmentOut": {
+        "properties": {
+          "start_s": {
+            "type": "number",
+            "title": "Start S"
+          },
+          "valence": {
+            "type": "number",
+            "title": "Valence"
+          },
+          "arousal": {
+            "type": "number",
+            "title": "Arousal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "start_s",
+          "valence",
+          "arousal"
+        ],
+        "title": "SegmentOut"
+      },
+      "TrackDetail": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence"
+          },
+          "arousal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arousal"
+          },
+          "octant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octant",
+            "description": "Russell octant of (valence, arousal)"
+          },
+          "top_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Tags",
+            "default": []
+          },
+          "bpm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bpm"
+          },
+          "key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key"
+          },
+          "scale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scale"
+          },
+          "loudness_lufs": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Loudness Lufs"
+          },
+          "mood_probs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Mood Probs",
+            "default": {}
+          },
+          "tag_probs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Tag Probs",
+            "default": {}
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/SegmentOut"
+            },
+            "type": "array",
+            "title": "Segments",
+            "default": []
+          },
+          "thesis_2007": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Verdict2007"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pipeline_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pipeline Version"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "album",
+          "duration_s",
+          "status"
+        ],
+        "title": "TrackDetail"
+      },
+      "TrackPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TrackSummary"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor",
+            "description": "Pass as `cursor` to get the next page"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "TrackPage"
+      },
+      "TrackSummary": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence"
+          },
+          "arousal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arousal"
+          },
+          "octant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octant",
+            "description": "Russell octant of (valence, arousal)"
+          },
+          "top_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Tags",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "album",
+          "duration_s",
+          "status"
+        ],
+        "title": "TrackSummary"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Verdict2007": {
+        "properties": {
+          "octant": {
+            "type": "string",
+            "title": "Octant"
+          },
+          "hevner": {
+            "type": "string",
+            "title": "Hevner"
+          },
+          "features": {
+            "$ref": "#/components/schemas/Features2007Out"
+          }
+        },
+        "type": "object",
+        "required": [
+          "octant",
+          "hevner",
+          "features"
+        ],
+        "title": "Verdict2007"
+      }
+    }
+  }
+}

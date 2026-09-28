@@ -25,6 +25,10 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest -W error
+      - name: OpenAPI schema is up to date
+        run: |
+          uv run moody openapi ../frontend/openapi.json
+          git diff --exit-code ../frontend/openapi.json
 
   frontend:
     runs-on: ubuntu-latest
