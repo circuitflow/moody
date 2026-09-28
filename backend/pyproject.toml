@@ -12,6 +12,7 @@ dependencies = [
     "numpy>=1.26",
     "sqlalchemy>=2.0",
     "alembic>=1.13",
+    "mutagen>=1.47",
 ]
 
 [project.optional-dependencies]
@@ -29,6 +30,7 @@ dev = [
     "httpx2>=2.13.1",
     "ruff>=0.6",
     "mypy>=1.11",
+    "soundfile>=0.13",
 ]
 
 [build-system]
