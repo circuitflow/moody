@@ -12,7 +12,10 @@ import pytest
 
 from tests.audio import write_clip
 
-pytest.importorskip("essentia")
+if os.environ.get("MOODY_REQUIRE_ESSENTIA"):
+    import essentia  # noqa: F401  - CI: fail loudly instead of skipping
+else:
+    pytest.importorskip("essentia")
 
 from moody.analysis.essentia_backend import EssentiaAnalyzer, dsp_measurements
 from moody.analysis.features2007 import thesis_features

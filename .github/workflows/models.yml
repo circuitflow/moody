@@ -21,6 +21,7 @@ jobs:
         working-directory: backend
     env:
       MOODY_MODELS_DIR: ${{ github.workspace }}/.models
+      MOODY_REQUIRE_ESSENTIA: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -32,4 +33,4 @@ jobs:
           key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
       - run: uv sync --frozen --extra analysis
       - run: uv run moody -v models pull --dir "$MOODY_MODELS_DIR"
-      - run: uv run pytest tests/test_essentia.py -m "models or not models" -v
+      - run: uv run pytest tests/test_essentia.py -m "models or not models" -v -rs

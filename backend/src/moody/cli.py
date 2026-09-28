@@ -55,6 +55,75 @@ def export_openapi(
     typer.echo(f"wrote {out}")
 
 
+@app.command()
+def scan(
+    path: Annotated[Path, typer.Argument(exists=True, file_okay=False, help="Music folder.")],
+    limit: Annotated[int | None, typer.Option(help="Process at most N files.")] = None,
+    workers: Annotated[int, typer.Option(min=1, help="Analysis processes.")] = 1,
+    reanalyze: Annotated[
+        bool, typer.Option(help="Re-analyze everything, including failures.")
+    ] = False,
+    fake: Annotated[
+        bool, typer.Option(help="Use the fake analyzer (development; no models needed).")
+    ] = False,
+) -> None:
+    """Index a music folder and analyze new or changed tracks."""
+    from functools import partial
+
+    from rich.progress import BarColumn, MofNCompleteColumn, Progress, TimeRemainingColumn
+
+    from moody.analysis.analyzer import FakeAnalyzer
+    from moody.jobs.scan import AnalyzerFactory, run_scan
+    from moody.store import init_db, session_factory
+
+    settings = get_settings()
+    factory: AnalyzerFactory
+    if fake:
+        factory = FakeAnalyzer
+    else:
+        from moody.analysis import models
+        from moody.analysis.essentia_backend import EssentiaAnalyzer
+
+        missing = [name for name, ok in models.status(settings.models_dir).items() if not ok]
+        if missing:
+            typer.echo("models missing; run `moody models pull` first", err=True)
+            raise typer.Exit(1)
+        factory = partial(EssentiaAnalyzer, settings.models_dir)
+
+    engine = init_db(settings.database_url)
+    sessions = session_factory(engine)
+    with Progress(
+        "[progress.description]{task.description}",
+        BarColumn(),
+        MofNCompleteColumn(),
+        TimeRemainingColumn(),
+    ) as bar:
+        task = bar.add_task("analyzing", total=None)
+        try:
+            result = run_scan(
+                path,
+                sessions,
+                factory,
+                workers=workers,
+                limit=limit,
+                reanalyze=reanalyze,
+                progress=lambda done, total: bar.update(task, completed=done, total=total),
+            )
+        finally:
+            engine.dispose()
+    ing = result.ingest
+    typer.echo(
+        f"library: {ing.added} new, {ing.moved} moved, {ing.modified} changed, "
+        f"{ing.unchanged} unchanged, {ing.duplicates} duplicates, {ing.failed} unreadable"
+    )
+    typer.echo(f"analysis: {result.analyzed} analyzed, {result.failed} failed")
+    for file, error in list(result.errors.items())[:10]:
+        typer.echo(f"  failed: {file}: {error}", err=True)
+    if result.cancelled:
+        typer.echo("interrupted; run again to resume", err=True)
+        raise typer.Exit(130)
+
+
 @models_app.command("pull")
 def models_pull(
     models_dir: ModelsDir = None,
