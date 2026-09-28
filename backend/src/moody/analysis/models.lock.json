@@ -1,0 +1,45 @@
+{
+  "models": {
+    "deam-msd-musicnn-2": {
+      "json": null,
+      "pb": null
+    },
+    "discogs-effnet-bs64-1": {
+      "json": null,
+      "pb": null
+    },
+    "emomusic-msd-musicnn-2": {
+      "json": null,
+      "pb": null
+    },
+    "mood_aggressive-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    },
+    "mood_happy-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    },
+    "mood_party-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    },
+    "mood_relaxed-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    },
+    "mood_sad-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    },
+    "msd-musicnn-1": {
+      "json": null,
+      "pb": null
+    },
+    "mtg_jamendo_moodtheme-discogs-effnet-1": {
+      "json": null,
+      "pb": null
+    }
+  },
+  "version": 1
+}

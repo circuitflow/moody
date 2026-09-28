@@ -1,0 +1,31 @@
+# Downloads the Essentia models on a GitHub runner and records their SHA-256 checksums in
+# backend/src/moody/analysis/models.lock.json, pushed to the `chore/models-lock` branch.
+name: Models lock
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --frozen
+      - run: uv run moody -v models pull --update-lock --dir "$RUNNER_TEMP/models"
+      - name: Push lock file
+        run: |
+          if git diff --quiet -- src/moody/analysis/models.lock.json; then
+            echo "Lock file unchanged."; exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B chore/models-lock
+          git commit -am "Pin Essentia model checksums"
+          git push -f origin chore/models-lock
