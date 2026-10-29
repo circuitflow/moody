@@ -35,10 +35,11 @@ jobs:
       - name: Check for Kaggle credentials (DEAM audio source)
         id: check
         env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: |
-          if [ -n "$KAGGLE_KEY" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
-          else echo "::notice::Skipped: add KAGGLE_USERNAME and KAGGLE_KEY repository secrets to run the DEAM evaluation."
+          if [ -n "$KAGGLE_API_TOKEN" ] || [ -n "$KAGGLE_KEY" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::Skipped: add a KAGGLE_API_TOKEN repository secret to run the DEAM evaluation."
           fi
         working-directory: .
       - uses: actions/checkout@v4
@@ -56,7 +57,7 @@ jobs:
         if: steps.check.outputs.ready == 'true'
         with:
           path: .deam
-          key: deam-v2
+          key: deam-v3
       - if: steps.check.outputs.ready == 'true'
         run: uv sync --frozen --extra analysis
       - if: steps.check.outputs.ready == 'true'
@@ -65,6 +66,8 @@ jobs:
         run: mkdir -p "$(dirname "$RESULTS")"
       - if: steps.check.outputs.ready == 'true'
         env:
+          KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_API_TOKEN }}
+          # legacy key pair, used only if no token is set
           KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
           KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
         run: uv run python -u ../eval/fetch_deam.py "$DEAM_DIR" 2>&1 | tee "$(dirname "$RESULTS")/deam_fetch.log"

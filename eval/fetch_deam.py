@@ -5,7 +5,8 @@ It is free for non-commercial research use; Moody only downloads it in CI (or lo
 redistributes it.
 
 Sources, in order:
-1. Kaggle mirror (audio + annotations), if KAGGLE_USERNAME and KAGGLE_KEY are set
+1. Kaggle mirror (audio + annotations), with a Kaggle API token (KAGGLE_API_TOKEN, or
+   ~/.kaggle/access_token locally) or a legacy KAGGLE_USERNAME + KAGGLE_KEY pair
 2. the original site (unreachable from GitHub runners as of 2026-10)
 3. annotations only: the Zenodo record, used when a source above lacked them
 
@@ -23,6 +24,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 KAGGLE_DATASET = "imsparsh/deam-mediaeval-dataset-emotional-analysis-in-music"
+KAGGLE_CLI = "kaggle@2.2.5"  # pinned; reads KAGGLE_API_TOKEN itself
 ORIGINAL = [
     "https://cvml.unige.ch/databases/DEAM/DEAM_Annotations.zip",
     "https://cvml.unige.ch/databases/DEAM/DEAM_audio.zip",
@@ -62,10 +64,17 @@ def download(url: str, dest: Path, name: str) -> None:
     tmp.replace(target)
 
 
+def has_kaggle_credentials() -> bool:
+    token_file = Path.home() / ".kaggle" / "access_token"
+    legacy = os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")
+    return bool(os.environ.get("KAGGLE_API_TOKEN") or token_file.exists() or legacy)
+
+
 def from_kaggle(dest: Path) -> None:
-    if not (os.environ.get("KAGGLE_USERNAME") and os.environ.get("KAGGLE_KEY")):
-        raise RuntimeError("KAGGLE_USERNAME / KAGGLE_KEY not set")
-    cmd = ["uvx", "kaggle", "datasets", "download", "-d", KAGGLE_DATASET, "-p", str(dest)]
+    if not has_kaggle_credentials():
+        raise RuntimeError("no Kaggle credentials (KAGGLE_API_TOKEN not set)")
+    # Credentials reach the CLI through the inherited environment only; nothing is printed.
+    cmd = ["uvx", KAGGLE_CLI, "datasets", "download", KAGGLE_DATASET, "-p", str(dest)]
     subprocess.run(cmd, check=True)
 
 
@@ -96,8 +105,8 @@ def main(dest: Path) -> None:
             break
     if mp3_count(dest) < MIN_CLIPS:
         sys.exit(
-            f"no DEAM audio: found {mp3_count(dest)} mp3 files. Add KAGGLE_USERNAME and "
-            "KAGGLE_KEY repository secrets (kaggle.com > Settings > API > Create New Token)."
+            f"no DEAM audio: found {mp3_count(dest)} mp3 files. Add a KAGGLE_API_TOKEN "
+            "repository secret (kaggle.com > Settings > API > create a token)."
         )
 
     if not has_annotations(dest):
