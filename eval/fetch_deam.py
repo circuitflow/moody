@@ -26,6 +26,11 @@ def zenodo_urls() -> list[str]:
     with urllib.request.urlopen(ZENODO_RECORD, timeout=60) as resp:
         record = json.load(resp)
     files = record.get("files", [])
+    print(
+        "zenodo record:",
+        record.get("metadata", {}).get("title"),
+        record.get("links", {}).get("html"),
+    )
     print("zenodo files:", [(f["key"], f["size"]) for f in files])
     wanted = [
         f
@@ -45,7 +50,7 @@ def download(url: str, dest: Path) -> Path:
     if target.exists():
         print("cached:", target)
         return target
-    print("downloading:", url)
+    print("downloading:", url, flush=True)
     tmp = target.with_suffix(".part")
     with urllib.request.urlopen(url, timeout=600) as resp, tmp.open("wb") as out:
         while chunk := resp.read(1 << 20):
@@ -67,7 +72,11 @@ def main(dest: Path) -> None:
         print("zenodo unavailable, using the original site:", exc)
         urls = ORIGINAL
     for url in urls:
-        archive = download(url, dest / "_zips")
+        try:
+            archive = download(url, dest / "_zips")
+        except Exception as exc:
+            print(f"download failed: {url}: {type(exc).__name__}: {exc}", flush=True)
+            raise
         with zipfile.ZipFile(archive) as zf:
             zf.extractall(dest)
         archive.unlink()  # keep only the unpacked files (smaller CI cache)

@@ -30,6 +30,7 @@ jobs:
     defaults:
       run:
         working-directory: backend
+        shell: bash  # adds -o pipefail, so `| tee` keeps failures
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
@@ -45,8 +46,9 @@ jobs:
           key: deam-v1
       - run: uv sync --frozen --extra analysis
       - run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
-      - run: uv run python ../eval/fetch_deam.py "$DEAM_DIR"
-      - run: uv run python ../eval/deam_orientation.py "$DEAM_DIR" "$MOODY_MODELS_DIR" "$RESULTS" --n "${{ inputs.n || '400' }}"
+      - run: mkdir -p "$(dirname "$RESULTS")"
+      - run: uv run python -u ../eval/fetch_deam.py "$DEAM_DIR" 2>&1 | tee "$(dirname "$RESULTS")/deam_fetch.log"
+      - run: uv run python -u ../eval/deam_orientation.py "$DEAM_DIR" "$MOODY_MODELS_DIR" "$RESULTS" --n "${{ inputs.n || '400' }}" 2>&1 | tee "$(dirname "$RESULTS")/deam_run.log"
       - name: Record diagnostics on failure
         if: failure()
         run: |
