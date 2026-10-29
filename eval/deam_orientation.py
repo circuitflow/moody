@@ -60,6 +60,30 @@ def load_annotations(deam_dir: Path) -> dict[int, tuple[float, float]]:
     return out
 
 
+def markdown_summary(report: dict[str, Any]) -> str:
+    """A readable table of ``report["heads"]`` (as written by ``main``)."""
+    rows = [
+        "| model | n | contrast_r | verdict | r(col0, V) | r(col0, A) | r(col1, V) | r(col1, A)"
+        " | r(col0, col1) | r(V, A) human |",
+        "|---|---|---|---|---|---|---|---|---|---|",
+    ]
+    for name, h in report["heads"].items():
+        r = h["pearson"]
+        rows.append(
+            f"| {name} | {h['n']} | {h['contrast_r']:+.2f} | {h['verdict']} "
+            f"| {r['col0_vs_valence']:+.2f} | {r['col0_vs_arousal']:+.2f} "
+            f"| {r['col1_vs_valence']:+.2f} | {r['col1_vs_arousal']:+.2f} "
+            f"| {h['outputs_corr']:+.2f} | {h['annotations_corr']:+.2f} |"
+        )
+    return (
+        f"# DEAM orientation check\n\n{report['dataset']}; sample of {report['sample']['n']} "
+        f"(seed {report['sample']['seed']}); pipeline {report['pipeline_version']}.\n\n"
+        "col0/col1 are the model's outputs in metadata order (`valence`, `arousal`). "
+        "`contrast_r` = corr(col0 - col1, valence - arousal): positive means the columns are "
+        "labelled correctly, negative means they are swapped.\n\n" + "\n".join(rows) + "\n"
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("deam_dir", type=Path)
@@ -128,7 +152,10 @@ def main() -> None:
     }
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n")
+    summary = markdown_summary(report)
+    args.out.with_suffix(".md").write_text(summary)
     print(json.dumps(report["heads"], indent=2))
+    print(summary)
 
 
 if __name__ == "__main__":
