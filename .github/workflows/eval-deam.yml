@@ -32,25 +32,46 @@ jobs:
         working-directory: backend
         shell: bash  # adds -o pipefail, so `| tee` keeps failures
     steps:
+      - name: Check for Kaggle credentials (DEAM audio source)
+        id: check
+        env:
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: |
+          if [ -n "$KAGGLE_KEY" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"
+          else echo "::notice::Skipped: add KAGGLE_USERNAME and KAGGLE_KEY repository secrets to run the DEAM evaluation."
+          fi
+        working-directory: .
       - uses: actions/checkout@v4
+        if: steps.check.outputs.ready == 'true'
       - uses: astral-sh/setup-uv@v6
+        if: steps.check.outputs.ready == 'true'
         with:
           enable-cache: true
       - uses: actions/cache@v4
+        if: steps.check.outputs.ready == 'true'
         with:
           path: .models
           key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
       - uses: actions/cache@v4
+        if: steps.check.outputs.ready == 'true'
         with:
           path: .deam
-          key: deam-v1
-      - run: uv sync --frozen --extra analysis
-      - run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
-      - run: mkdir -p "$(dirname "$RESULTS")"
-      - run: uv run python -u ../eval/fetch_deam.py "$DEAM_DIR" 2>&1 | tee "$(dirname "$RESULTS")/deam_fetch.log"
-      - run: uv run python -u ../eval/deam_orientation.py "$DEAM_DIR" "$MOODY_MODELS_DIR" "$RESULTS" --n "${{ inputs.n || '400' }}" 2>&1 | tee "$(dirname "$RESULTS")/deam_run.log"
+          key: deam-v2
+      - if: steps.check.outputs.ready == 'true'
+        run: uv sync --frozen --extra analysis
+      - if: steps.check.outputs.ready == 'true'
+        run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
+      - if: steps.check.outputs.ready == 'true'
+        run: mkdir -p "$(dirname "$RESULTS")"
+      - if: steps.check.outputs.ready == 'true'
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+        run: uv run python -u ../eval/fetch_deam.py "$DEAM_DIR" 2>&1 | tee "$(dirname "$RESULTS")/deam_fetch.log"
+      - if: steps.check.outputs.ready == 'true'
+        run: uv run python -u ../eval/deam_orientation.py "$DEAM_DIR" "$MOODY_MODELS_DIR" "$RESULTS" --n "${{ inputs.n || '400' }}" 2>&1 | tee "$(dirname "$RESULTS")/deam_run.log"
       - name: Record diagnostics on failure
-        if: failure()
+        if: failure() && steps.check.outputs.ready == 'true'
         run: |
           mkdir -p "$(dirname "$RESULTS")"
           {
@@ -59,7 +80,7 @@ jobs:
             find "$DEAM_DIR" -maxdepth 4 2>/dev/null | head -200
           } > "$(dirname "$RESULTS")/deam_orientation_failure.txt"
       - name: Push results
-        if: always()
+        if: always() && steps.check.outputs.ready == 'true'
         run: |
           cd ..
           git add -f eval/results/ || true
