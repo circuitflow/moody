@@ -32,3 +32,29 @@ def test_top_tags_and_2007_verdict() -> None:
     )
     assert analysis.top_tags == ["happy", "party"]
     assert analysis.verdict_2007 == ("Excitement", "joyous")
+
+
+def test_top_tags_skip_theme_tags() -> None:
+    analysis = TrackAnalysis(
+        valence=0,
+        arousal=0,
+        segments=(),
+        mood_probs={},
+        tag_probs={"christmas": 0.6, "film": 0.4, "ballad": 0.35, "relaxing": 0.3, "love": 0.2},
+    )
+    assert analysis.top_tags == ["relaxing", "love"]
+
+
+def test_mood_vocabulary_is_a_subset_of_jamendo_classes() -> None:
+    from moody.analysis.analyzer import MOOD_TAGS
+
+    jamendo = {
+        "action", "adventure", "advertising", "background", "ballad", "calm", "children",
+        "christmas", "commercial", "cool", "corporate", "dark", "deep", "documentary", "drama",
+        "dramatic", "dream", "emotional", "energetic", "epic", "fast", "film", "fun", "funny",
+        "game", "groovy", "happy", "heavy", "holiday", "hopeful", "inspiring", "love",
+        "meditative", "melancholic", "melodic", "motivational", "movie", "nature", "party",
+        "positive", "powerful", "relaxing", "retro", "romantic", "sad", "sexy", "slow", "soft",
+        "soundscape", "space", "sport", "summer", "trailer", "travel", "upbeat", "uplifting",
+    }  # fmt: skip
+    assert len(jamendo) == 56 and jamendo >= MOOD_TAGS and len(MOOD_TAGS) == 30

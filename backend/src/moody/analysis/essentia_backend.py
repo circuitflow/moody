@@ -6,6 +6,7 @@ Requires the ``analysis`` extra (essentia-tensorflow) and downloaded models
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,9 @@ def _f32(x: Any) -> npt.NDArray[np.float32]:
 
 
 def _essentia() -> Any:
+    # Quiet TensorFlow's C++ start-up logging (absl/MLIR notices, once per worker process).
+    # It must be set before essentia loads TensorFlow; errors are still shown.
+    os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
     import essentia
     import essentia.standard as es
 

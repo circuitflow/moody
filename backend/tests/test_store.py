@@ -44,3 +44,35 @@ def test_deleting_track_cascades(sessions: sessionmaker[Session]) -> None:
         s.delete(s.scalars(select(Track)).one())
     with sessions() as s:
         assert s.scalars(select(Segment)).all() == []
+
+
+def test_migration_0002_recomputes_top_tags(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    import json
+
+    from alembic import command
+    from sqlalchemy import text
+
+    from moody.store.db import alembic_config, make_engine
+
+    engine = make_engine(f"sqlite:///{tmp_path / 'old.db'}")
+    cfg = alembic_config(engine)
+    command.upgrade(cfg, "0001")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "INSERT INTO tracks (id, content_hash, path, file_size, file_mtime, status,"
+                " added_at) VALUES (1, 'h', 'p', 1, 0, 'analyzed', '2026-01-01')"
+            )
+        )
+        conn.execute(
+            text(
+                "INSERT INTO analyses (track_id, pipeline_version, valence, arousal, mood_probs,"
+                " tag_probs, top_tags, analyzed_at) VALUES (1, 'v', 0, 0, '{}', :probs,"
+                " 'christmas film', '2026-01-01')"
+            ),
+            {"probs": json.dumps({"christmas": 0.5, "film": 0.4, "sad": 0.3, "calm": 0.05})},
+        )
+    command.upgrade(cfg, "head")
+    with engine.connect() as conn:
+        assert conn.execute(text("SELECT top_tags FROM analyses")).scalar_one() == "sad"
+    engine.dispose()

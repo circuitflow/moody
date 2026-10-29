@@ -15,6 +15,26 @@ from moody.legacy.thesis2007 import Features2007, classify_2007
 TAG_THRESHOLD = 0.1
 TOP_TAGS = 5
 
+# The MTG-Jamendo "mood/theme" model mixes moods with use-cases and themes. Only these 30
+# describe how music feels, so only they become a track's top tags; the other 26 (christmas,
+# film, corporate, travel, trailer, ballad, fast, ...) stay available in ``tag_probs``.
+MOOD_TAGS = frozenset(
+    {
+        "calm", "cool", "dark", "deep", "dramatic", "dream", "emotional", "energetic", "epic",
+        "fun", "funny", "groovy", "happy", "heavy", "hopeful", "inspiring", "love", "meditative",
+        "melancholic", "motivational", "party", "positive", "powerful", "relaxing", "romantic",
+        "sad", "sexy", "soft", "upbeat", "uplifting",
+    }
+)  # fmt: skip
+
+
+def rank_mood_tags(tag_probs: dict[str, float]) -> list[str]:
+    """Most probable mood tags (at most TOP_TAGS, each at least TAG_THRESHOLD)."""
+    moods = sorted(
+        ((t, p) for t, p in tag_probs.items() if t in MOOD_TAGS), key=lambda kv: kv[1], reverse=True
+    )
+    return [tag for tag, p in moods[:TOP_TAGS] if p >= TAG_THRESHOLD]
+
 
 @dataclass(frozen=True)
 class TrackAnalysis:
@@ -32,8 +52,7 @@ class TrackAnalysis:
 
     @property
     def top_tags(self) -> list[str]:
-        ranked = sorted(self.tag_probs.items(), key=lambda kv: kv[1], reverse=True)
-        return [tag for tag, p in ranked[:TOP_TAGS] if p >= TAG_THRESHOLD]
+        return rank_mood_tags(self.tag_probs)
 
     @property
     def verdict_2007(self) -> tuple[str, str] | None:

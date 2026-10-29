@@ -69,3 +69,27 @@ def test_calm_clip_is_lower_arousal_than_noise(
     analyzer: EssentiaAnalyzer, clips: dict[str, Path]
 ) -> None:
     assert analyzer.analyze(clips["calm"]).arousal < analyzer.analyze(clips["noise"]).arousal
+
+
+@pytest.mark.models
+def test_no_tensorflow_startup_noise(tmp_path: Path, clips: dict[str, Path]) -> None:
+    """A fresh process (like a scan worker) must not print TensorFlow's absl/MLIR notices."""
+    import subprocess
+    import sys
+
+    models_dir = Path(os.environ.get("MOODY_MODELS_DIR", Path.home() / ".cache/moody/models"))
+    env = {k: v for k, v in os.environ.items() if k != "TF_CPP_MIN_LOG_LEVEL"}
+    code = (
+        "from pathlib import Path; import sys\n"
+        "from moody.analysis.essentia_backend import EssentiaAnalyzer\n"
+        "EssentiaAnalyzer(Path(sys.argv[1])).analyze(Path(sys.argv[2]))\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code, str(models_dir), str(clips["calm"])],
+        capture_output=True,
+        text=True,
+        env=env,
+        check=True,
+    )
+    assert "mlir_graph_optimization" not in result.stderr
+    assert "absl::InitializeLog" not in result.stderr
