@@ -19,8 +19,14 @@ import sys
 from pathlib import Path
 
 OCTANTS = [
-    "Pleasure", "Excitement", "Arousal", "Distress",
-    "Displeasure", "Depression", "Sleepiness", "Relaxation",
+    "Pleasure",
+    "Excitement",
+    "Arousal",
+    "Distress",
+    "Displeasure",
+    "Depression",
+    "Sleepiness",
+    "Relaxation",
 ]
 FEATURES = ["mode", "harmony", "tempo", "rhythm", "loudness"]
 OUT = Path(__file__).parent / "data" / "thesis2007_training.csv"
@@ -42,17 +48,19 @@ def main(src: Path) -> None:
         rec = by_title.get(title.strip().lower())
         id3 = rec["ID3"] if rec else {}
         lyrics = rec["Features"].get("moodLyrics") if rec else None
-        out_rows.append({
-            "title": title.strip(),
-            "artist": id3.get("songArtist", "").strip(),
-            "album": id3.get("songAlbum", "").strip(),
-            "genre": id3.get("songGenre", "").strip(),
-            "amg_mood": amg.strip(),
-            "octant_2007": octant,
-            "hevner_2007": hevner.strip().lower(),
-            **{name: f"{float(v):.4f}" for name, v in zip(FEATURES, row[1:], strict=True)},
-            "lyrics_octant": lyrics[0][0] if lyrics else "",
-        })
+        out_rows.append(
+            {
+                "title": title.strip(),
+                "artist": id3.get("songArtist", "").strip(),
+                "album": id3.get("songAlbum", "").strip(),
+                "genre": id3.get("songGenre", "").strip(),
+                "amg_mood": amg.strip(),
+                "octant_2007": octant,
+                "hevner_2007": hevner.strip().lower(),
+                **{name: f"{float(v):.4f}" for name, v in zip(FEATURES, row[1:], strict=True)},
+                "lyrics_octant": lyrics[0][0] if lyrics else "",
+            }
+        )
 
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", newline="") as f:
