@@ -1,0 +1,123 @@
+{
+  "dataset": "DEAM static song-level annotations (1-9), 45 s clips",
+  "sample": {
+    "n": 400,
+    "seed": 0
+  },
+  "pipeline_version": "7f7c297be088",
+  "essentia": "2.1-beta6-dev",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "seconds": 1747,
+  "heads": {
+    "deam-msd-musicnn-2": {
+      "n": 400,
+      "pearson": {
+        "col0_vs_valence": 0.8237302344289754,
+        "col0_vs_arousal": 0.6386165869229582,
+        "col1_vs_valence": 0.6567244161381101,
+        "col1_vs_arousal": 0.8401008719414312
+      },
+      "contrast_r": 0.6102189505517923,
+      "ccc": {
+        "col0_vs_valence": 0.7847548306706862,
+        "col1_vs_arousal": 0.7823633538182556
+      },
+      "outputs_corr": 0.7955025213573409,
+      "annotations_corr": 0.547956726952999,
+      "verdict": "as_labelled"
+    },
+    "emomusic-msd-musicnn-2": {
+      "n": 400,
+      "pearson": {
+        "col0_vs_valence": 0.6020155443508877,
+        "col0_vs_arousal": 0.6142857393628273,
+        "col1_vs_valence": 0.730372282014797,
+        "col1_vs_arousal": 0.6891082450653008
+      },
+      "contrast_r": -0.03058264902572046,
+      "ccc": {
+        "col0_vs_valence": 0.534307383905432,
+        "col1_vs_arousal": 0.6458482962027804
+      },
+      "outputs_corr": 0.6311270705574308,
+      "annotations_corr": 0.547956726952999,
+      "verdict": "undetermined"
+    }
+  },
+  "production": {
+    "n": 400,
+    "pearson": {
+      "col0_vs_valence": 0.8237602614771592,
+      "col0_vs_arousal": 0.6386365554899067,
+      "col1_vs_valence": 0.6567244120038275,
+      "col1_vs_arousal": 0.8401008660019927
+    },
+    "contrast_r": 0.6103357744506727,
+    "ccc": {
+      "col0_vs_valence": 0.016010115384918314,
+      "col1_vs_arousal": 0.01887102512571915
+    },
+    "outputs_corr": 0.7955683496422262,
+    "annotations_corr": 0.547956726952999,
+    "verdict": "as_labelled"
+  },
+  "production_vs_reimplementation_gap": 0.00011682389888034717,
+  "confounds": {
+    "happy": {
+      "model_v": 0.5627088878018868,
+      "model_a": 0.5947118231660676,
+      "model_v_minus_a": -0.08692740356738123,
+      "human_v": 0.5285988854918534,
+      "human_a": 0.4879753913073807,
+      "human_v_minus_a": -0.015578460922699591
+    },
+    "sad": {
+      "model_v": -0.6565100697108943,
+      "model_a": -0.6081315108195963,
+      "model_v_minus_a": -0.03512650258869539,
+      "human_v": -0.5185876146663719,
+      "human_a": -0.5109378157955973,
+      "human_v_minus_a": 0.05082145484290793
+    },
+    "aggressive": {
+      "model_v": 0.4302724165728044,
+      "model_a": 0.33861629153032,
+      "model_v_minus_a": 0.11851949761373369,
+      "human_v": 0.2908712437955488,
+      "human_a": 0.347978044749346,
+      "human_v_minus_a": -0.09625855271373764
+    },
+    "relaxed": {
+      "model_v": -0.6949726489516349,
+      "model_a": -0.6630427413181024,
+      "model_v_minus_a": -0.006467025248312958,
+      "human_v": -0.566631960670461,
+      "human_a": -0.5906961296452544,
+      "human_v_minus_a": 0.09130879556201459
+    },
+    "party": {
+      "model_v": 0.6190680065335684,
+      "model_a": 0.5759917900466386,
+      "model_v_minus_a": 0.02907187177064035,
+      "human_v": 0.5175594601136309,
+      "human_a": 0.5220836134082468,
+      "human_v_minus_a": -0.06413813307028846
+    },
+    "bpm": {
+      "model_v": 0.10108096031867939,
+      "model_a": 0.0928925889741418,
+      "model_v_minus_a": 0.006586597194568388,
+      "human_v": 0.06953207895252632,
+      "human_a": 0.06636662179685984,
+      "human_v_minus_a": -0.004452846947999017
+    },
+    "loudness": {
+      "model_v": 0.5263923165264135,
+      "model_a": 0.3902019472950419,
+      "model_v_minus_a": 0.18332129747286247,
+      "human_v": 0.4424405319682661,
+      "human_a": 0.41494038483922796,
+      "human_v_minus_a": -0.020214306279591084
+    }
+  }
+}

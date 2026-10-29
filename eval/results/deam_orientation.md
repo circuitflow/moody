@@ -1,0 +1,27 @@
+# DEAM orientation check
+
+DEAM static song-level annotations (1-9), 45 s clips; sample of 400 (seed 0); pipeline 7f7c297be088.
+
+col0/col1 are the model's outputs in metadata order (`valence`, `arousal`). `contrast_r` = corr(col0 - col1, valence - arousal): positive means the columns are labelled correctly, negative means they are swapped, and |contrast_r| < 0.2 is undetermined.
+
+| model | n | contrast_r | verdict | r(col0, V) | r(col0, A) | r(col1, V) | r(col1, A) | r(col0, col1) | r(V, A) human |
+|---|---|---|---|---|---|---|---|---|---|
+| deam-msd-musicnn-2 | 400 | +0.61 | as_labelled | +0.82 | +0.64 | +0.66 | +0.84 | +0.80 | +0.55 |
+| emomusic-msd-musicnn-2 | 400 | -0.03 | undetermined | +0.60 | +0.61 | +0.73 | +0.69 | +0.63 | +0.55 |
+| moody EssentiaAnalyzer (DEAM head) | 400 | +0.61 | as_labelled | +0.82 | +0.64 | +0.66 | +0.84 | +0.80 | +0.55 |
+
+Production analyzer vs re-implemented chain: contrast_r gap 0.000 (ok, tolerance 0.02).
+
+## Confounds (production analyzer outputs)
+
+Pearson r of each signal with model and human valence/arousal. The V-A columns show what separates valence from arousal.
+
+| signal | model V | model A | model V-A | human V | human A | human V-A |
+|---|---|---|---|---|---|---|
+| happy | +0.56 | +0.59 | -0.09 | +0.53 | +0.49 | -0.02 |
+| sad | -0.66 | -0.61 | -0.04 | -0.52 | -0.51 | +0.05 |
+| aggressive | +0.43 | +0.34 | +0.12 | +0.29 | +0.35 | -0.10 |
+| relaxed | -0.69 | -0.66 | -0.01 | -0.57 | -0.59 | +0.09 |
+| party | +0.62 | +0.58 | +0.03 | +0.52 | +0.52 | -0.06 |
+| bpm | +0.10 | +0.09 | +0.01 | +0.07 | +0.07 | -0.00 |
+| loudness | +0.53 | +0.39 | +0.18 | +0.44 | +0.41 | -0.02 |

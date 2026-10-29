@@ -169,6 +169,14 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
     - (a) On the DEAM test split, map ground-truth V/A to Russell octants and compare octant accuracy and mean angular error for the 2007 tree (on Essentia-derived thesis features), the 2007 k-NN, and the 2026 DEAM head.
     - (b) On the 372-song thesis set, run on the author's Mac where the MP3s are, compare 2007 octants and AMG tags with 2026 V/A and tags.
     - The 2007 training labels are the tree's own outputs, not human annotations, so they are never treated as ground truth.
+    - 2007 verdicts are reported with their stability under feature noise, and the "vigorous → Depression" and minor-mode "Pleasure" leaves are flagged (see "Known issues in the 2007 system" in `legacy/README.md`).
+- **Results so far** (`eval/results/deam_orientation.md`, 2026-10-29; 400 DEAM clips, seed 0):
+  - **Orientation:** Moody's production `EssentiaAnalyzer` stores valence and arousal the right way round. `contrast_r` = corr(V − A predicted, V − A rated) is **+0.61**, the same as an independent re-implementation of the chain (gap 0.000). Pearson r is 0.82 for valence and 0.84 for arousal, and CCC is 0.79 / 0.78. These are in-domain numbers and optimistic, because the head was trained on DEAM.
+  - **The emoMusic head can't separate V from A on DEAM** (`contrast_r` −0.03): valence/arousal generalizes poorly across datasets.
+  - **Collapse onto one "intensity" axis:** the predicted V and A correlate at +0.80 on DEAM and +0.77 on the thesis library, against +0.55 between people's ratings.
+  - **Loudness bias in predicted valence:** loudness correlates +0.18 with predicted V − A but −0.02 with rated V − A; "aggressive" gives +0.12 vs −0.10. Listeners don't reward loudness or aggression with valence, but the model does, even on its own training data. On the thesis library the gap is larger: loudness correlates +0.40 with predicted V and +0.14 with predicted A. That's why loud grunge and garage rock top the valence list.
+  - **Mood classifiers are poor valence markers:** on DEAM, the EffNet happy/sad/relaxed/party classifiers correlate about equally with rated V and rated A (e.g. happy +0.53 / +0.49), so they can't adjudicate valence vs arousal on their own.
+  - **Success criteria for a custom V/A head:** beat the pretrained head out of domain (trained on one dataset, tested on another), and bring corr(loudness, predicted V − A) down to the listeners' level (about 0).
 
 ## 13. Quality, CI, licensing
 
@@ -183,7 +191,7 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
 
 | Risk | Mitigation |
 |---|---|
-| The pretrained DEAM head generalizes poorly to modern pop | Report eval metrics honestly; M5 option: fine-tune a small head on DEAM + PMEmo embeddings |
+| The pretrained DEAM head generalizes poorly. Measured: V and A collapse onto one intensity axis (+0.80 vs +0.55 for humans), and predicted valence carries a loudness bias that listeners don't share (§12) | Report the metrics honestly; train a custom head on EffNet embeddings (DEAM + PMEmo) against the §12 success criteria |
 | essentia-tensorflow wheel/Python version drift | Pin the exact version, test in CI, keep the Docker image as the reference environment |
 | Spotify API policy changes further | Spotify is isolated behind a `StreamingProvider` interface; Last.fm, and potentially ListenBrainz, are alternatives |
 | Jamendo audio availability or licensing for the demo | Store attribution; the bundle build is reproducible; the demo keeps working without audio previews |
