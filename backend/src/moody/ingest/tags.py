@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
@@ -52,3 +52,32 @@ def read_tags(path: Path) -> TrackTags:
         isrc=_first(tags, "isrc", "TSRC"),
         mb_recording_id=_first(tags, "musicbrainz_trackid", "musicbrainz_recordingid"),
     )
+
+
+# Folder names that say nothing about the artist or album.
+PLACEHOLDER_FOLDERS = frozenset({"compilations", "unknown artist", "unknown album"})
+
+
+def folder_fallback(path: Path, root: Path) -> tuple[str | None, str | None]:
+    """(artist, album) from an ``Artist/Album/Track`` layout under ``root``, as iTunes and
+    Music.app organize libraries. Shallower layouts are ambiguous and give (None, None)."""
+    try:
+        parts = path.resolve().relative_to(root.resolve()).parts
+    except ValueError:
+        return None, None
+    if len(parts) < 3:
+        return None, None
+
+    def clean(name: str) -> str | None:
+        name = name.strip()
+        return None if not name or name.lower() in PLACEHOLDER_FOLDERS else name
+
+    return clean(parts[-3]), clean(parts[-2])
+
+
+def with_folder_fallback(tags: TrackTags, path: Path, root: Path) -> TrackTags:
+    """Fill a missing artist or album from the folder layout; tags always win."""
+    if tags.artist and tags.album:
+        return tags
+    artist, album = folder_fallback(path, root)
+    return replace(tags, artist=tags.artist or artist, album=tags.album or album)

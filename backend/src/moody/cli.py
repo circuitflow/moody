@@ -115,6 +115,11 @@ def scan(
     typer.echo(
         f"library: {ing.added} new, {ing.moved} moved, {ing.modified} changed, "
         f"{ing.unchanged} unchanged, {ing.duplicates} duplicates, {ing.failed} unreadable"
+        + (
+            f"; artist/album from folder names for {ing.filled_from_folders}"
+            if ing.filled_from_folders
+            else ""
+        )
     )
     typer.echo(f"analysis: {result.analyzed} analyzed, {result.failed} failed")
     for file, error in list(result.errors.items())[:10]:

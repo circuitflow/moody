@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from moody.ingest.hashing import content_hash
-from moody.ingest.tags import read_tags
+from moody.ingest.tags import folder_fallback, read_tags, with_folder_fallback
 from moody.store.models import Track
 
 log = logging.getLogger(__name__)
@@ -39,6 +39,8 @@ class IngestReport:
     unchanged: int = 0
     duplicates: int = 0
     failed: int = 0
+    # Tracks whose missing artist/album was filled in from folder names (not part of ``seen``).
+    filled_from_folders: int = 0
 
     @property
     def seen(self) -> int:
@@ -55,6 +57,8 @@ def ingest(root: Path, session: Session, limit: int | None = None) -> IngestRepo
       analysis kept
     - known hash whose original path still exists: a duplicate copy, skipped
     - same path, new content: modified, so the track is reset to pending and its analysis dropped
+    - missing artist/album tags are filled from an ``Artist/Album/Track`` folder layout, also for
+      already-indexed tracks (so libraries scanned before this fallback existed get it too)
     """
     report = IngestReport()
     by_path = {t.path: t for t in session.scalars(select(Track))}
@@ -73,6 +77,12 @@ def ingest(root: Path, session: Session, limit: int | None = None) -> IngestRepo
                 and existing.file_mtime == stat.st_mtime
             ):
                 report.unchanged += 1
+                if existing.artist is None or existing.album is None:
+                    artist, album = folder_fallback(path, root)
+                    if (existing.artist is None and artist) or (existing.album is None and album):
+                        existing.artist = existing.artist or artist
+                        existing.album = existing.album or album
+                        report.filled_from_folders += 1
                 continue
 
             digest = content_hash(path)
@@ -87,7 +97,10 @@ def ingest(root: Path, session: Session, limit: int | None = None) -> IngestRepo
                 report.moved += 1
                 continue
 
-            tags = read_tags(path)
+            raw_tags = read_tags(path)
+            tags = with_folder_fallback(raw_tags, path, root)
+            if (tags.artist, tags.album) != (raw_tags.artist, raw_tags.album):
+                report.filled_from_folders += 1
             if existing is not None:
                 del by_hash[existing.content_hash]
                 track = existing

@@ -133,3 +133,43 @@ def test_corrupt_file_is_skipped_not_fatal(library: Path, sessions: sessionmaker
 def test_limit(library: Path, sessions: sessionmaker[Session]) -> None:
     with sessions() as s:
         assert ingest(library, s, limit=2).added == 2
+
+
+def test_folder_fallback_for_untagged_files(
+    tmp_path: Path, sessions: sessionmaker[Session]
+) -> None:
+    root = tmp_path / "iTunes Music"
+    write_tone(root / "Nat King Cole" / "Greatest Hits" / "Nature Boy.mp3", 300)
+    write_tone(root / "Compilations" / "Now 12" / "Song.mp3", 350)
+    write_tone(root / "Tagged Folder" / "Some Album" / "t.flac", 400, artist="Real Artist")
+    write_tone(root / "Loose" / "shallow.flac", 450)
+    with sessions() as s:
+        report = ingest(root, s)
+    by_title = {t.title: t for t in tracks(sessions).values()}
+    assert (by_title["Nature Boy"].artist, by_title["Nature Boy"].album) == (
+        "Nat King Cole",
+        "Greatest Hits",
+    )
+    assert (by_title["Song"].artist, by_title["Song"].album) == (None, "Now 12")
+    assert (by_title["t"].artist, by_title["t"].album) == ("Real Artist", "Some Album")
+    assert (by_title["shallow"].artist, by_title["shallow"].album) == (None, None)
+    assert report.filled_from_folders == 3
+
+
+def test_folder_fallback_backfills_existing_tracks(
+    tmp_path: Path, sessions: sessionmaker[Session]
+) -> None:
+    root = tmp_path / "iTunes Music"
+    write_tone(root / "Björk" / "Debut" / "Venus as a Boy.mp3", 300)
+    with sessions() as s:
+        ingest(root, s)
+        track = s.scalars(select(Track)).one()
+        track.artist = track.album = None  # as indexed before the fallback existed
+        s.commit()
+    with sessions() as s:
+        report = ingest(root, s)
+    assert (report.unchanged, report.filled_from_folders) == (1, 1)
+    track = next(iter(tracks(sessions).values()))
+    assert (track.artist, track.album) == ("Björk", "Debut")
+    with sessions() as s:
+        assert ingest(root, s).filled_from_folders == 0  # nothing left to fill
