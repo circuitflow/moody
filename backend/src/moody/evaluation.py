@@ -9,6 +9,10 @@ import numpy.typing as npt
 
 FloatArray = npt.NDArray[np.float64]
 
+# Below this |contrast_r| the two output columns carry no usable valence-vs-arousal signal,
+# so neither "as labelled" nor "swapped" is a meaningful verdict.
+UNDETERMINED_BELOW = 0.2
+
 
 def pearson(x: npt.ArrayLike, y: npt.ArrayLike) -> float:
     return float(
@@ -50,5 +54,45 @@ def orientation_report(
         "ccc": {"col0_vs_valence": ccc(p[:, 0], v), "col1_vs_arousal": ccc(p[:, 1], a)},
         "outputs_corr": pearson(p[:, 0], p[:, 1]),
         "annotations_corr": pearson(v, a),
-        "verdict": "as_labelled" if contrast > 0 else "swapped",
+        "verdict": verdict(contrast),
     }
+
+
+def verdict(contrast_r: float) -> str:
+    if abs(contrast_r) < UNDETERMINED_BELOW:
+        return "undetermined"
+    return "as_labelled" if contrast_r > 0 else "swapped"
+
+
+def signal_correlations(
+    model_v: npt.ArrayLike,
+    model_a: npt.ArrayLike,
+    signals: dict[str, npt.ArrayLike],
+    human_v: npt.ArrayLike | None = None,
+    human_a: npt.ArrayLike | None = None,
+) -> dict[str, dict[str, float]]:
+    """Pearson r of each signal (mood probabilities, loudness, BPM, ...) with the model's
+    valence, arousal and their difference, and with the human ratings when given.
+
+    The ``*_v_minus_a`` columns show what separates valence from arousal: on a library where
+    loudness tracks ``model_v_minus_a`` but not ``human_v_minus_a``, the model's valence is
+    leaning on loudness rather than on what listeners call valence.
+    """
+    mv, ma = np.asarray(model_v, dtype=np.float64), np.asarray(model_a, dtype=np.float64)
+    out: dict[str, dict[str, float]] = {}
+    for name, raw in signals.items():
+        x = np.asarray(raw, dtype=np.float64)
+        row = {
+            "model_v": pearson(mv, x),
+            "model_a": pearson(ma, x),
+            "model_v_minus_a": pearson(mv - ma, x),
+        }
+        if human_v is not None and human_a is not None:
+            hv, ha = np.asarray(human_v, dtype=np.float64), np.asarray(human_a, dtype=np.float64)
+            row |= {
+                "human_v": pearson(hv, x),
+                "human_a": pearson(ha, x),
+                "human_v_minus_a": pearson(hv - ha, x),
+            }
+        out[name] = row
+    return out

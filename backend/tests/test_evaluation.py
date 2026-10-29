@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from moody.evaluation import ccc, orientation_report
+from moody.evaluation import ccc, orientation_report, signal_correlations, verdict
 
 
 @pytest.fixture
@@ -34,3 +34,27 @@ def test_ccc_penalizes_offset_and_scale() -> None:
     assert ccc(x, x) == pytest.approx(1.0)
     assert ccc(x + 1, x) < 0.5
     assert ccc(0.2 * x, x) < 0.5
+
+
+def test_weak_contrast_is_undetermined() -> None:
+    assert verdict(0.61) == "as_labelled"
+    assert verdict(-0.5) == "swapped"
+    assert verdict(-0.03) == "undetermined"
+    assert verdict(0.19) == "undetermined"
+
+
+def test_signal_correlations_isolates_what_separates_v_from_a() -> None:
+    rng = np.random.default_rng(3)
+    energy, loud = rng.normal(size=400), rng.normal(size=400)
+    model_v = energy + 0.8 * loud  # valence leaning on loudness
+    model_a = energy
+    human_v = energy + 0.5 * rng.normal(size=400)  # listeners don't care about loudness
+    human_a = energy + 0.5 * rng.normal(size=400)
+    out = signal_correlations(model_v, model_a, {"loudness": loud}, human_v, human_a)["loudness"]
+    assert out["model_v_minus_a"] > 0.9
+    assert abs(out["human_v_minus_a"]) < 0.15 and abs(out["human_v"]) < 0.15
+    assert set(signal_correlations(model_v, model_a, {"x": loud})["x"]) == {
+        "model_v",
+        "model_a",
+        "model_v_minus_a",
+    }

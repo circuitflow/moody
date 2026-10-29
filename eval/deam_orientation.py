@@ -1,8 +1,11 @@
 """Which output column of Essentia's valence/arousal heads tracks which human rating?
 
 Runs the MSD-MusiCNN embedding model and the DEAM and emoMusic heads on a sample of DEAM
-clips and compares the outputs with DEAM's song-level (static) annotations. Writes a JSON
-report. Run from ``backend/`` with the ``analysis`` extra and pulled models:
+clips and compares the outputs with DEAM's song-level (static) annotations. It also runs
+Moody's production ``EssentiaAnalyzer`` on the same clips, which checks the real code path and
+gives loudness, BPM and mood probabilities for a confound analysis (do listeners tie valence
+to loudness on DEAM the way the model does on other libraries?). Writes a JSON report and a
+markdown summary. Run from ``backend/`` with the ``analysis`` extra and pulled models:
 
     uv run python ../eval/deam_orientation.py DEAM_DIR MODELS_DIR OUT_JSON [--n 400]
 
@@ -27,10 +30,14 @@ from typing import Any
 
 import numpy as np
 
-from moody.analysis.models import MUSICNN, model_path, pipeline_version, read_meta
-from moody.evaluation import orientation_report
+from moody.analysis.analyzer import AnalysisError
+from moody.analysis.models import MOOD_CLASSIFIERS, MUSICNN, model_path, pipeline_version, read_meta
+from moody.evaluation import orientation_report, signal_correlations
 
 HEADS = ("deam-msd-musicnn-2", "emomusic-msd-musicnn-2")
+PRODUCTION = "moody EssentiaAnalyzer (DEAM head)"
+# The production analyzer must agree with the re-implemented chain on orientation.
+MAX_CONTRAST_GAP = 0.02
 
 
 def load_annotations(deam_dir: Path) -> dict[int, tuple[float, float]]:
@@ -67,7 +74,7 @@ def markdown_summary(report: dict[str, Any]) -> str:
         " | r(col0, col1) | r(V, A) human |",
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
-    for name, h in report["heads"].items():
+    for name, h in {**report["heads"], PRODUCTION: report["production"]}.items():
         r = h["pearson"]
         rows.append(
             f"| {name} | {h['n']} | {h['contrast_r']:+.2f} | {h['verdict']} "
@@ -75,12 +82,28 @@ def markdown_summary(report: dict[str, Any]) -> str:
             f"| {r['col1_vs_valence']:+.2f} | {r['col1_vs_arousal']:+.2f} "
             f"| {h['outputs_corr']:+.2f} | {h['annotations_corr']:+.2f} |"
         )
+    conf = [
+        "| signal | model V | model A | model V-A | human V | human A | human V-A |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    for name, c in report["confounds"].items():
+        conf.append(
+            f"| {name} | {c['model_v']:+.2f} | {c['model_a']:+.2f} | {c['model_v_minus_a']:+.2f} "
+            f"| {c['human_v']:+.2f} | {c['human_a']:+.2f} | {c['human_v_minus_a']:+.2f} |"
+        )
+    gap = report["production_vs_reimplementation_gap"]
     return (
         f"# DEAM orientation check\n\n{report['dataset']}; sample of {report['sample']['n']} "
         f"(seed {report['sample']['seed']}); pipeline {report['pipeline_version']}.\n\n"
         "col0/col1 are the model's outputs in metadata order (`valence`, `arousal`). "
         "`contrast_r` = corr(col0 - col1, valence - arousal): positive means the columns are "
-        "labelled correctly, negative means they are swapped.\n\n" + "\n".join(rows) + "\n"
+        "labelled correctly, negative means they are swapped, and |contrast_r| < 0.2 is "
+        "undetermined.\n\n" + "\n".join(rows) + "\n\n"
+        f"Production analyzer vs re-implemented chain: contrast_r gap {gap:.3f} "
+        f"({'ok' if gap <= MAX_CONTRAST_GAP else 'MISMATCH'}, tolerance {MAX_CONTRAST_GAP}).\n\n"
+        "## Confounds (production analyzer outputs)\n\n"
+        "Pearson r of each signal with model and human valence/arousal. The V-A columns show "
+        "what separates valence from arousal.\n\n" + "\n".join(conf) + "\n"
     )
 
 
@@ -121,7 +144,15 @@ def main() -> None:
             **({"input": meta.input} if meta.input else {}),
         )
 
+    from moody.analysis.essentia_backend import EssentiaAnalyzer
+
+    analyzer = EssentiaAnalyzer(args.models_dir)
     preds: dict[str, list[list[float]]] = {name: [] for name in HEADS}
+    production: list[list[float]] = []
+    signals: dict[str, list[float]] = {m: [] for m in MOOD_CLASSIFIERS} | {
+        "bpm": [],
+        "loudness": [],
+    }
     used: list[int] = []
     started = time.monotonic()
     for i, song_id in enumerate(ids, 1):
@@ -130,11 +161,19 @@ def main() -> None:
                 filename=str(audio[song_id]), sampleRate=16000, resampleQuality=4
             )()
             emb = embed(wave)
-        except RuntimeError as exc:
+            result = analyzer.analyze(audio[song_id])
+        except (RuntimeError, AnalysisError) as exc:
             print(f"skip {song_id}: {exc}", file=sys.stderr)
             continue
         for name, head in heads.items():
             preds[name].append(np.asarray(head(emb)).mean(axis=0).tolist())
+        production.append([result.valence, result.arousal])
+        for mood in MOOD_CLASSIFIERS:
+            signals[mood].append(result.mood_probs[mood])
+        signals["bpm"].append(result.bpm if result.bpm is not None else float("nan"))
+        signals["loudness"].append(
+            result.loudness_lufs if result.loudness_lufs is not None else float("nan")
+        )
         used.append(song_id)
         if i % 50 == 0:
             print(f"{i}/{len(ids)} clips ({time.monotonic() - started:.0f} s)")
@@ -150,12 +189,19 @@ def main() -> None:
         "seconds": round(time.monotonic() - started),
         "heads": {name: orientation_report(np.array(preds[name]), v, a) for name in HEADS},
     }
+    prod = np.array(production)
+    report["production"] = orientation_report(prod, v, a)
+    report["production_vs_reimplementation_gap"] = abs(
+        report["production"]["contrast_r"] - report["heads"]["deam-msd-musicnn-2"]["contrast_r"]
+    )
+    report["confounds"] = signal_correlations(prod[:, 0], prod[:, 1], signals, v, a)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n")
     summary = markdown_summary(report)
     args.out.with_suffix(".md").write_text(summary)
-    print(json.dumps(report["heads"], indent=2))
     print(summary)
+    if report["production_vs_reimplementation_gap"] > MAX_CONTRAST_GAP:
+        sys.exit("production analyzer disagrees with the re-implemented chain")
 
 
 if __name__ == "__main__":
