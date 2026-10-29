@@ -1,0 +1,69 @@
+# Checks which output column of the valence/arousal heads tracks which DEAM annotation.
+# Results (or diagnostics, on failure) are pushed to the `eval/deam-orientation` branch.
+name: Eval (DEAM orientation)
+
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: Number of DEAM clips to evaluate
+        default: "400"
+  push:
+    branches: [main]
+    paths:
+      - eval/deam_orientation.py
+      - eval/fetch_deam.py
+      - backend/src/moody/evaluation.py
+      - .github/workflows/eval-deam.yml
+
+permissions:
+  contents: write
+
+jobs:
+  deam:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      MOODY_MODELS_DIR: ${{ github.workspace }}/.models
+      DEAM_DIR: ${{ github.workspace }}/.deam
+      RESULTS: ${{ github.workspace }}/eval/results/deam_orientation.json
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/cache@v4
+        with:
+          path: .models
+          key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
+      - uses: actions/cache@v4
+        with:
+          path: .deam
+          key: deam-v1
+      - run: uv sync --frozen --extra analysis
+      - run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
+      - run: uv run python ../eval/fetch_deam.py "$DEAM_DIR"
+      - run: uv run python ../eval/deam_orientation.py "$DEAM_DIR" "$MOODY_MODELS_DIR" "$RESULTS" --n "${{ inputs.n || '400' }}"
+      - name: Record diagnostics on failure
+        if: failure()
+        run: |
+          mkdir -p "$(dirname "$RESULTS")"
+          {
+            echo "run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "deam dir listing (first 200 entries):"
+            find "$DEAM_DIR" -maxdepth 4 2>/dev/null | head -200
+          } > "$(dirname "$RESULTS")/deam_orientation_failure.txt"
+      - name: Push results
+        if: always()
+        run: |
+          cd ..
+          git add -f eval/results/ || true
+          if git diff --cached --quiet; then echo "nothing to push"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B eval/deam-orientation
+          git commit -m "DEAM orientation results (run ${{ github.run_id }})"
+          git push -f origin eval/deam-orientation
