@@ -83,7 +83,7 @@ export class FakeSource implements DataSource {
         valence: x.valence, arousal: x.arousal, octant: octantOf(x.valence, x.arousal),
       }));
   }
-  audioUrl(id: number) {
+  audioUrl(id: number): string | null {
     return `/api/audio/${id}`;
   }
 }

@@ -126,3 +126,46 @@ button[aria-pressed="true"] { border-color: var(--ink-2); font-weight: 600; }
 .selection-head { display: flex; justify-content: space-between; align-items: center; }
 .selection ol { padding-left: 20px; }
 .hint { font-size: 0.8125rem; }
+
+/* Track page */
+.track-head h2 { margin: 0; font-size: 1.5rem; }
+.track-head p { margin: 4px 0; }
+.player { width: 100%; margin: 8px 0 16px; }
+.track-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.track-col { display: grid; gap: 16px; align-content: start; min-width: 0; }
+@media (max-width: 860px) { .track-grid { grid-template-columns: 1fr; } }
+.small { font-size: 0.8125rem; }
+.small-heading, .thesis h2 { font-size: 0.9375rem; margin: 0 0 8px; }
+.chart { margin: 0; position: relative; }
+.legend-row { list-style: none; display: flex; gap: 16px; margin: 0 0 4px; padding: 0; font-size: 0.8125rem; color: var(--ink-2); }
+.legend-row li { display: flex; align-items: center; gap: 6px; }
+.line-key { display: inline-block; width: 14px; height: 2px; border-radius: 1px; vertical-align: middle; }
+.trajectory { width: 100%; height: auto; display: block; }
+.trajectory .grid, .mini-circumplex .grid { stroke: var(--grid); stroke-width: 1; }
+.trajectory .baseline { stroke: var(--axis); stroke-width: 1; }
+.trajectory .tick, .mini-circumplex .tick { fill: var(--muted); font-size: 11px; }
+.trajectory .series { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trajectory .end-label { fill: var(--ink-2); font-size: 12px; }
+.trajectory .playhead { stroke: var(--ink); stroke-width: 1.5; }
+.trajectory .crosshair { stroke: var(--ink-2); stroke-width: 1; stroke-dasharray: 3 3; }
+.readout { display: flex; gap: 14px; font-size: 0.8125rem; color: var(--ink-2); margin-top: 4px; }
+.mini-circumplex { width: 100%; max-width: 300px; display: block; margin: 0 auto; }
+.mini-circumplex .mood-path { fill: none; stroke: var(--series-1); stroke-width: 1.5; opacity: 0.7; }
+.mini-circumplex .mean-dot { fill: var(--series-1); stroke: var(--surface); stroke-width: 2; }
+.mini-circumplex .now-dot { fill: var(--ink); stroke: var(--surface); stroke-width: 2; }
+.bars { margin: 0; }
+.bars figcaption { font-size: 0.9375rem; font-weight: 600; margin-bottom: 8px; }
+.bars ul, .thesis-features { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.bars li, .thesis-features li { display: grid; grid-template-columns: 90px 1fr 90px; gap: 8px; align-items: center; font-size: 0.8125rem; }
+.bar-label { color: var(--ink-2); }
+.bar-track { position: relative; height: 8px; background: var(--grid); border-radius: 4px; }
+.bar-fill { position: absolute; inset: 0 auto 0 0; background: var(--series-1); border-radius: 4px; }
+.threshold { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+.bar-value { color: var(--ink-2); }
+.facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 16px; margin: 0; }
+.facts dt { color: var(--muted); font-size: 0.75rem; }
+.facts dd { margin: 0; font-weight: 600; }
+.verdicts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0 0 8px; }
+.verdicts dt { color: var(--muted); font-size: 0.75rem; }
+.verdicts dd { margin: 0; }
+.neighbors { padding-left: 20px; margin: 0; display: grid; gap: 4px; font-size: 0.875rem; }
