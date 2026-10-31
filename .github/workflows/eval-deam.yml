@@ -84,12 +84,7 @@ jobs:
           } > "$(dirname "$RESULTS")/deam_orientation_failure.txt"
       - name: Push results
         if: always() && steps.check.outputs.ready == 'true'
+        working-directory: .
         run: |
-          cd ..
-          git add -f eval/results/ || true
-          if git diff --cached --quiet; then echo "nothing to push"; exit 0; fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B eval/deam-orientation
-          git commit -m "DEAM orientation results (run ${{ github.run_id }})"
-          git push -f origin eval/deam-orientation
+          [ -d eval/results ] || { echo "no results"; exit 0; }
+          .github/scripts/push-results.sh eval/deam-orientation "DEAM orientation results (run ${{ github.run_id }})" eval/results

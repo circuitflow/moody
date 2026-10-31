@@ -134,16 +134,11 @@ jobs:
           uv run python ../eval/tags_moodtheme.py ../artifacts/tracks/tracks.csv ../bundle/eval-tags.json
           cat ../bundle/eval-tags.json | head -c 2000 >> "$GITHUB_STEP_SUMMARY"
       - name: Push the tag evaluation to the eval/tags-moodtheme branch
+        working-directory: .
         run: |
-          cd ..
           mkdir -p eval/results
           cp bundle/eval-tags.json eval/results/tags_moodtheme.json
-          git add -f eval/results/tags_moodtheme.json
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -B eval/tags-moodtheme
-          git commit -m "MTG-Jamendo mood/theme tag evaluation (run ${{ github.run_id }})"
-          git push -f origin eval/tags-moodtheme
+          .github/scripts/push-results.sh eval/tags-moodtheme "MTG-Jamendo mood/theme tag evaluation (run ${{ github.run_id }})" eval/results/tags_moodtheme.json
       - name: Publish the bundle
         env:
           GH_TOKEN: ${{ github.token }}
