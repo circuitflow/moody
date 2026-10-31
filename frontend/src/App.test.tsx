@@ -1,34 +1,22 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
-import { App } from "./App";
-import { DataSourceProvider } from "./data/context";
-import type { DataSource } from "./data/source";
+import { screen } from "@testing-library/react";
+import { renderApp } from "./test/render";
 
-function renderWith(source: DataSource) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
-    <QueryClientProvider client={client}>
-      <DataSourceProvider source={source}>
-        <App />
-      </DataSourceProvider>
-    </QueryClientProvider>,
-  );
-}
-
-test("shows backend version when healthy", async () => {
-  renderWith({ kind: "api", health: async () => ({ status: "ok", version: "1.2.3" }) });
-  expect(await screen.findByText("Backend v1.2.3")).toBeInTheDocument();
-  expect(screen.getByRole("img", { name: /valence–arousal/i })).toBeInTheDocument();
+test("shell shows library counts from meta", async () => {
+  renderApp("/");
+  expect(await screen.findByText(/4 of 4 tracks analyzed/)).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Map" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "List" })).toBeInTheDocument();
 });
 
-test("reports an unavailable backend", async () => {
-  renderWith({ kind: "api", health: () => Promise.reject(new Error("down")) });
-  expect(await screen.findByText("Backend unavailable")).toBeInTheDocument();
+test("routes to a track page", async () => {
+  renderApp("/track/2");
+  expect(await screen.findByLabelText("Track")).toBeInTheDocument();
 });
 
-test("labels the eight thesis octants", async () => {
-  renderWith({ kind: "api", health: async () => ({ status: "ok", version: "1" }) });
-  for (const label of ["Pleasure", "Excitement", "Arousal", "Distress", "Displeasure", "Depression", "Sleepiness", "Relaxation"]) {
-    expect(screen.getByText(label)).toBeInTheDocument();
-  }
+test("theme toggle cycles and sets data-theme", async () => {
+  renderApp("/");
+  const button = await screen.findByRole("button", { name: /Theme: system/ });
+  button.click();
+  expect(await screen.findByRole("button", { name: /Theme: light/ })).toBeInTheDocument();
+  expect(document.documentElement.dataset.theme).toBe("light");
 });

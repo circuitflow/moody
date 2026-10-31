@@ -1,23 +1,94 @@
+/*
+ * Tokens from the dataviz reference palette (light and dark, both validated).
+ * Dark applies when the OS prefers it, unless the toggle says light; the toggle wins both ways.
+ */
 :root {
-  --bg: #fbfaf7;
-  --fg: #1d1b19;
-  --muted: #6b665f;
-  --line: #d8d3cb;
-  --accent: #5b4bd6;
-  color-scheme: light dark;
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --border: rgba(11, 11, 11, 0.1);
+  --series-1: #2a78d6; /* blue: single series, valence */
+  --series-2: #eb6834; /* orange: arousal / "different" */
+  --series-3: #1baf7a; /* aqua: "adjacent" */
+  --seq-100: #cde2fb;
+  --seq-250: #86b6ef;
+  --seq-400: #3987e5;
+  --seq-550: #1c5cab;
+  --seq-700: #0d366b;
+  --wedge-a: rgba(11, 11, 11, 0.025);
+  --wedge-b: rgba(11, 11, 11, 0);
+  --focus: #2a78d6;
   font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: var(--ink);
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #161514; --fg: #eeebe6; --muted: #a39e96; --line: #3a3733; --accent: #a69bff; }
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --border: rgba(255, 255, 255, 0.1);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --series-3: #199e70;
+    --seq-100: #104281;
+    --seq-250: #1c5cab;
+    --seq-400: #2a78d6;
+    --seq-550: #6da7ec;
+    --seq-700: #b7d3f6;
+    --wedge-a: rgba(255, 255, 255, 0.035);
+    --focus: #3987e5;
+  }
 }
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --border: rgba(255, 255, 255, 0.1);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --seq-100: #104281;
+  --seq-250: #1c5cab;
+  --seq-400: #2a78d6;
+  --seq-550: #6da7ec;
+  --seq-700: #b7d3f6;
+  --wedge-a: rgba(255, 255, 255, 0.035);
+  --focus: #3987e5;
+}
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); }
-.app { max-width: 720px; margin: 0 auto; padding: 32px 16px; }
-h1 { margin: 0; font-size: 2.25rem; letter-spacing: -0.02em; }
-.tagline { margin: 4px 0 24px; color: var(--muted); }
-.circumplex { width: 100%; max-width: 560px; display: block; margin: 0 auto; }
-.circumplex line { stroke: var(--line); stroke-width: 0.3; }
-.circumplex .axis { fill: var(--muted); font-size: 3px; }
-.circumplex circle { fill: none; stroke: var(--line); stroke-width: 0.3; }
-.circumplex .octant { fill: var(--accent); font-size: 3.4px; }
-footer { margin-top: 24px; color: var(--muted); font-size: 0.875rem; }
+body { margin: 0; background: var(--page); color: var(--ink); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, select, input {
+  font: inherit; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px;
+}
+button { cursor: pointer; }
+button[aria-pressed="true"] { border-color: var(--ink-2); font-weight: 600; }
+
+.shell { max-width: 1200px; margin: 0 auto; padding: 16px; }
+.shell-header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+.shell-header h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.02em; }
+.shell-header nav { display: flex; gap: 12px; }
+.shell-header nav a { text-decoration: none; color: var(--ink-2); padding: 2px 0; }
+.shell-header nav a[data-status="active"] { color: var(--ink); border-bottom: 2px solid var(--ink); }
+.shell-header .spacer { flex: 1; }
+.shell-footer { margin-top: 24px; color: var(--muted); font-size: 0.8125rem; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.muted { color: var(--muted); }
+.secondary { color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }

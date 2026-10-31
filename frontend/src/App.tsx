@@ -1,25 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { useDataSource } from "./data/context";
-import { Circumplex } from "./components/Circumplex";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider, type RouterHistory } from "@tanstack/react-router";
+import { useState } from "react";
+import { DataSourceProvider } from "./data/context";
+import type { DataSource } from "./data/source";
+import { createAppRouter } from "./router";
+import { LibraryProvider } from "./state/library";
 
-export function App() {
-  const source = useDataSource();
-  const health = useQuery({ queryKey: ["health"], queryFn: () => source.health() });
-
+export function App({
+  source,
+  history,
+  queryClient,
+}: {
+  source: DataSource;
+  history?: RouterHistory;
+  queryClient?: QueryClient;
+}) {
+  const [client] = useState(() => queryClient ?? new QueryClient());
+  const [router] = useState(() => createAppRouter(history));
   return (
-    <main className="app">
-      <header>
-        <h1>Moody</h1>
-        <p className="tagline">The mood of your music library, mapped.</p>
-      </header>
-      <Circumplex />
-      <footer>
-        <span role="status">
-          {health.isPending && "Connecting…"}
-          {health.isError && "Backend unavailable"}
-          {health.isSuccess && `${source.kind === "static" ? "Demo" : "Backend"} v${health.data.version}`}
-        </span>
-      </footer>
-    </main>
+    <QueryClientProvider client={client}>
+      <DataSourceProvider source={source}>
+        <LibraryProvider>
+          <RouterProvider router={router} />
+        </LibraryProvider>
+      </DataSourceProvider>
+    </QueryClientProvider>
   );
 }
