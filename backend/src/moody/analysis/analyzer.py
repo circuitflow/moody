@@ -10,6 +10,7 @@ from typing import Protocol
 import numpy as np
 import numpy.typing as npt
 
+from moody.analysis.models import EFFNET
 from moody.legacy.thesis2007 import Features2007, classify_2007
 
 TAG_THRESHOLD = 0.1
@@ -98,7 +99,8 @@ class FakeAnalyzer:
             scale="major",
             loudness_lufs=float(rng.uniform(-20, -6)),
             features_2007=Features2007(*(float(x) for x in rng.uniform(0, 100, size=5))),
+            # Keyed like the real EffNet embedding so neighbors work in fake libraries too.
             embeddings={
-                "fake": rng.standard_normal(self.embedding_dim).astype(np.float32),
+                EFFNET: rng.standard_normal(self.embedding_dim).astype(np.float32),
             },
         )

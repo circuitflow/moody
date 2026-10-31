@@ -64,5 +64,39 @@ class MoodMap(BaseModel):
     arousal: list[float]
     octant: list[str]
     tag: list[str | None]
+    tags: list[str] = Field(description="Space-separated top mood tags, most probable first")
     title: list[str | None]
     artist: list[str | None]
+
+
+class MapValues(BaseModel):
+    """One numeric field per map point, aligned with ``MoodMap.id``, for color-by."""
+
+    field: str
+    values: list[float | None]
+
+
+class OctantInfo(BaseModel):
+    name: str
+    angle_deg: float
+
+
+class Meta(BaseModel):
+    version: str
+    pipeline_version: str
+    tracks: int
+    analyzed: int
+    mood_tags: list[str]
+    octants: list[OctantInfo]
+    map_fields: list[str] = Field(description="Valid `field` values for /api/map/values")
+    audio: bool = Field(description="Whether /api/audio serves local files")
+
+
+class Neighbor(BaseModel):
+    id: int
+    title: str | None
+    artist: str | None
+    similarity: float = Field(description="Cosine similarity of Discogs-EffNet embeddings")
+    valence: float
+    arousal: float
+    octant: str

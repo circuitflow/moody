@@ -26,6 +26,27 @@
         }
       }
     },
+    "/api/meta": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Meta",
+        "operationId": "meta_api_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Meta"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/tracks": {
       "get": {
         "tags": [
@@ -183,6 +204,64 @@
         }
       }
     },
+    "/api/tracks/{track_id}/neighbors": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Get Neighbors",
+        "operationId": "get_neighbors_api_tracks__track_id__neighbors_get",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Track Id"
+            }
+          },
+          {
+            "name": "k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "K"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Neighbor"
+                  },
+                  "title": "Response Get Neighbors Api Tracks  Track Id  Neighbors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/map": {
       "get": {
         "tags": [
@@ -197,6 +276,89 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MoodMap"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/map/values": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Map Values",
+        "operationId": "map_values_api_map_values_get",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "bpm, loudness, or tag:<mood tag> (see /api/meta)",
+              "title": "Field"
+            },
+            "description": "bpm, loudness, or tag:<mood tag> (see /api/meta)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MapValues"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio/{track_id}": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Audio",
+        "description": "Stream a track's local file (supports HTTP Range). Only paths stored in the library are\never served; the client cannot name a path.",
+        "operationId": "audio_api_audio__track_id__get",
+        "parameters": [
+          {
+            "name": "track_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Track Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The track's audio file",
+            "content": {
+              "audio/*": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -271,6 +433,94 @@
         ],
         "title": "Health"
       },
+      "MapValues": {
+        "properties": {
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "values": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "field",
+          "values"
+        ],
+        "title": "MapValues",
+        "description": "One numeric field per map point, aligned with ``MoodMap.id``, for color-by."
+      },
+      "Meta": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "pipeline_version": {
+            "type": "string",
+            "title": "Pipeline Version"
+          },
+          "tracks": {
+            "type": "integer",
+            "title": "Tracks"
+          },
+          "analyzed": {
+            "type": "integer",
+            "title": "Analyzed"
+          },
+          "mood_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Mood Tags"
+          },
+          "octants": {
+            "items": {
+              "$ref": "#/components/schemas/OctantInfo"
+            },
+            "type": "array",
+            "title": "Octants"
+          },
+          "map_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Map Fields",
+            "description": "Valid `field` values for /api/map/values"
+          },
+          "audio": {
+            "type": "boolean",
+            "title": "Audio",
+            "description": "Whether /api/audio serves local files"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "pipeline_version",
+          "tracks",
+          "analyzed",
+          "mood_tags",
+          "octants",
+          "map_fields",
+          "audio"
+        ],
+        "title": "Meta"
+      },
       "MoodMap": {
         "properties": {
           "id": {
@@ -315,6 +565,14 @@
             "type": "array",
             "title": "Tag"
           },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tags",
+            "description": "Space-separated top mood tags, most probable first"
+          },
           "title": {
             "items": {
               "anyOf": [
@@ -351,11 +609,88 @@
           "arousal",
           "octant",
           "tag",
+          "tags",
           "title",
           "artist"
         ],
         "title": "MoodMap",
         "description": "Columnar arrays (one entry per analyzed track) to keep large maps compact."
+      },
+      "Neighbor": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "similarity": {
+            "type": "number",
+            "title": "Similarity",
+            "description": "Cosine similarity of Discogs-EffNet embeddings"
+          },
+          "valence": {
+            "type": "number",
+            "title": "Valence"
+          },
+          "arousal": {
+            "type": "number",
+            "title": "Arousal"
+          },
+          "octant": {
+            "type": "string",
+            "title": "Octant"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "similarity",
+          "valence",
+          "arousal",
+          "octant"
+        ],
+        "title": "Neighbor"
+      },
+      "OctantInfo": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "angle_deg": {
+            "type": "number",
+            "title": "Angle Deg"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "angle_deg"
+        ],
+        "title": "OctantInfo"
       },
       "SegmentOut": {
         "properties": {
