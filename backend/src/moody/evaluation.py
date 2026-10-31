@@ -137,3 +137,83 @@ def average_precision(scores: npt.ArrayLike, labels: npt.ArrayLike) -> float:
     recall = tp / y.sum()
     prev_recall = np.r_[0.0, recall[:-1]]
     return float(np.sum((recall - prev_recall) * precision))
+
+
+CLEAR_RADIUS = 0.25  # rated mood at least this far from neutral (on the [-1, 1] scale)
+
+
+def _octant_stats(
+    pred: list[int], pred_deg: list[float], truth: list[int], truth_deg: list[float]
+) -> dict[str, float]:
+    n = len(truth)
+    if n == 0:
+        return {"n": 0}
+    diff = [min(abs(p - t) % 8, 8 - abs(p - t) % 8) for p, t in zip(pred, truth, strict=True)]
+    ang = [abs((p - t + 180) % 360 - 180) for p, t in zip(pred_deg, truth_deg, strict=True)]
+    return {
+        "n": n,
+        "exact": round(sum(d == 0 for d in diff) / n, 4),
+        "within_one": round(sum(d <= 1 for d in diff) / n, 4),
+        "mean_angle_error_deg": round(float(np.mean(ang)), 1),
+    }
+
+
+def octant_report(
+    pred_va: npt.ArrayLike,
+    octants_2007: list[str | None],
+    valence: npt.ArrayLike,
+    arousal: npt.ArrayLike,
+) -> dict[str, Any]:
+    """2007 tree vs 2026 head on Russell octants, against listeners' ratings.
+
+    ``pred_va`` is the 2026 head's ``[n, 2]`` output in [-1, 1]; ``octants_2007`` the 2007
+    tree's verdicts (None when its features couldn't be computed); ``valence``/``arousal`` the
+    ratings on DEAM's 1-9 scale, centred on its midpoint 5. The 2026 angle is the predicted
+    point's angle; the 2007 tree only names an octant, so its angle is the octant's centre.
+    Chance is predicting the most common rated octant every time.
+    """
+    from moody.legacy.thesis2007 import Octant, octant_of
+
+    p = np.asarray(pred_va, dtype=np.float64)
+    tv = (np.asarray(valence, dtype=np.float64) - 5) / 4
+    ta = (np.asarray(arousal, dtype=np.float64) - 5) / 4
+    truth = [int(octant_of(v, a)) for v, a in zip(tv, ta, strict=True)]
+    truth_deg = [float(np.degrees(np.arctan2(a, v)) % 360) for v, a in zip(tv, ta, strict=True)]
+    clear = [bool(np.hypot(v, a) >= CLEAR_RADIUS) for v, a in zip(tv, ta, strict=True)]
+    new = [int(octant_of(v, a)) for v, a in p]
+    new_deg = [float(np.degrees(np.arctan2(a, v)) % 360) for v, a in p]
+    has_old = [o is not None for o in octants_2007]
+    old = [int(Octant.from_label(o)) if o else -1 for o in octants_2007]
+    old_deg = [45.0 * o for o in old]
+
+    def subset(mask: list[bool]) -> dict[str, Any]:
+        idx = [i for i, m in enumerate(mask) if m]
+        idx_old = [i for i in idx if has_old[i]]
+        counts = np.bincount([truth[i] for i in idx], minlength=8) if idx else np.zeros(8)
+        return {
+            "2026_head": _octant_stats(
+                [new[i] for i in idx],
+                [new_deg[i] for i in idx],
+                [truth[i] for i in idx],
+                [truth_deg[i] for i in idx],
+            ),
+            "2007_tree": _octant_stats(
+                [old[i] for i in idx_old],
+                [old_deg[i] for i in idx_old],
+                [truth[i] for i in idx_old],
+                [truth_deg[i] for i in idx_old],
+            ),
+            "chance_exact": round(float(counts.max() / max(1, len(idx))), 4),
+            "rated_octants": {Octant(k).label: int(c) for k, c in enumerate(counts) if c},
+        }
+
+    return {
+        "all": subset([True] * len(truth)),
+        "clear": subset(clear),
+        "clear_radius": CLEAR_RADIUS,
+        "note": (
+            "Octants around the neutral point of each scale (DEAM 5 on 1-9; Moody 0 on -1..1). "
+            "The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic; "
+            "the 2007 tree never saw DEAM."
+        ),
+    }

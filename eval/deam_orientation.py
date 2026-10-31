@@ -32,7 +32,7 @@ import numpy as np
 
 from moody.analysis.analyzer import AnalysisError
 from moody.analysis.models import MOOD_CLASSIFIERS, MUSICNN, model_path, pipeline_version, read_meta
-from moody.evaluation import orientation_report, signal_correlations
+from moody.evaluation import octant_report, orientation_report, signal_correlations
 
 HEADS = ("deam-msd-musicnn-2", "emomusic-msd-musicnn-2")
 PRODUCTION = "moody EssentiaAnalyzer (DEAM head)"
@@ -92,6 +92,23 @@ def markdown_summary(report: dict[str, Any]) -> str:
             f"| {c['human_v']:+.2f} | {c['human_a']:+.2f} | {c['human_v_minus_a']:+.2f} |"
         )
     gap = report["production_vs_reimplementation_gap"]
+    octants = ""
+    if "octants" in report:
+        o = report["octants"]
+        lines = [
+            "| clips | model | n | exact octant | within one | mean angle error | chance |",
+            "|---|---|---|---|---|---|---|",
+        ]
+        for key, name in (("all", "all"), ("clear", f"clear (radius >= {o['clear_radius']})")):
+            for model in ("2026_head", "2007_tree"):
+                m = o[key][model]
+                if m.get("n"):
+                    lines.append(
+                        f"| {name} | {model} | {m['n']} | {m['exact']:.0%} | {m['within_one']:.0%} "
+                        f"| {m['mean_angle_error_deg']:.0f}° | {o[key]['chance_exact']:.0%} |"
+                    )
+        table = "\n".join(lines)
+        octants = f"\n## 2007 vs 2026: Russell octants\n\n{o['note']}\n\n{table}\n"
     return (
         f"# DEAM orientation check\n\n{report['dataset']}; sample of {report['sample']['n']} "
         f"(seed {report['sample']['seed']}); pipeline {report['pipeline_version']}.\n\n"
@@ -103,7 +120,7 @@ def markdown_summary(report: dict[str, Any]) -> str:
         f"({'ok' if gap <= MAX_CONTRAST_GAP else 'MISMATCH'}, tolerance {MAX_CONTRAST_GAP}).\n\n"
         "## Confounds (production analyzer outputs)\n\n"
         "Pearson r of each signal with model and human valence/arousal. The V-A columns show "
-        "what separates valence from arousal.\n\n" + "\n".join(conf) + "\n"
+        "what separates valence from arousal.\n\n" + "\n".join(conf) + "\n" + octants
     )
 
 
@@ -149,6 +166,7 @@ def main() -> None:
     analyzer = EssentiaAnalyzer(args.models_dir)
     preds: dict[str, list[list[float]]] = {name: [] for name in HEADS}
     production: list[list[float]] = []
+    octants_2007: list[str | None] = []
     signals: dict[str, list[float]] = {m: [] for m in MOOD_CLASSIFIERS} | {
         "bpm": [],
         "loudness": [],
@@ -168,6 +186,8 @@ def main() -> None:
         for name, head in heads.items():
             preds[name].append(np.asarray(head(emb)).mean(axis=0).tolist())
         production.append([result.valence, result.arousal])
+        verdict = result.verdict_2007
+        octants_2007.append(verdict[0] if verdict else None)
         for mood in MOOD_CLASSIFIERS:
             signals[mood].append(result.mood_probs[mood])
         signals["bpm"].append(result.bpm if result.bpm is not None else float("nan"))
@@ -195,6 +215,7 @@ def main() -> None:
         report["production"]["contrast_r"] - report["heads"]["deam-msd-musicnn-2"]["contrast_r"]
     )
     report["confounds"] = signal_correlations(prod[:, 0], prod[:, 1], signals, v, a)
+    report["octants"] = octant_report(prod, octants_2007, v, a)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(report, indent=2) + "\n")
     summary = markdown_summary(report)

@@ -105,3 +105,24 @@ def test_tag_evaluation_report() -> None:
     assert report["macro_roc_auc"] == pytest.approx(
         (by_tag["happy"]["roc_auc"] + by_tag["sad"]["roc_auc"]) / 2, abs=1e-4
     )
+
+
+def test_octant_report() -> None:
+    from moody.evaluation import octant_report
+
+    # Ratings (1-9): Pleasure, Excitement, Depression, and one near-neutral clip.
+    v = [9, 8, 2, 5.2]
+    a = [5, 8, 2, 5.1]
+    pred = [[0.5, 0.0], [0.4, 0.45], [0.3, 0.3], [0.1, 0.1]]  # right, right, opposite, right
+    old = ["Pleasure", "Arousal", None, "Excitement"]  # right, one off, missing, right
+    r = octant_report(pred, old, v, a)
+    new_all = r["all"]["2026_head"]
+    assert (new_all["n"], new_all["exact"], new_all["within_one"]) == (4, 0.75, 0.75)
+    # angle errors: 0, 3.4 (48.4 vs 45), 180, 18.4 (45 vs 26.6)
+    assert new_all["mean_angle_error_deg"] == pytest.approx((0 + 3.4 + 180 + 18.4) / 4, abs=0.2)
+    old_all = r["all"]["2007_tree"]
+    assert (old_all["n"], old_all["exact"], old_all["within_one"]) == (3, round(2 / 3, 4), 1.0)
+    clear = r["clear"]
+    assert clear["2026_head"]["n"] == 3  # the near-neutral clip drops out
+    assert clear["chance_exact"] == pytest.approx(1 / 3, abs=1e-4)
+    assert r["all"]["rated_octants"] == {"Pleasure": 1, "Excitement": 2, "Depression": 1}

@@ -32,6 +32,9 @@ def make(engine: Engine, tmp_path: Path, **settings: object) -> TestClient:
 def client(engine: Engine, tmp_path: Path) -> Iterator[TestClient]:
     with make(engine, tmp_path, library_path=library(tmp_path / "Music"), fake_analyzer=True) as c:
         yield c
+        # Never let a scan outlive the app (it would write to a disposed database).
+        SlowAnalyzer.gate.set()
+        c.app.state.scans.join(10)  # type: ignore[attr-defined]
 
 
 def test_scan_from_the_api(client: TestClient) -> None:

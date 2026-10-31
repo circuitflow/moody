@@ -31,6 +31,7 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
     "soundfile>=0.13",
+    "pytest-github-actions-annotate-failures==0.4.2",
 ]
 
 [build-system]
