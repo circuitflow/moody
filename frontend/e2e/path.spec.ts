@@ -32,7 +32,8 @@ test("dragging the end point re-plans and updates the link", async ({ page }) =>
   await expect(page).toHaveURL(/to=-?\d\.\d{3}%2C-?\d\.\d{3}/);
   await expect(page.getByLabel("To")).toHaveValue("");
   await expect(playlist(page)).toHaveCount(10);
-  expect(await playlist(page).allTextContents()).not.toEqual(before);
+  // Re-planning is deferred while dragging, so wait for the list to catch up.
+  await expect.poll(() => playlist(page).allTextContents()).not.toEqual(before);
 });
 
 test("keyboard moves a handle", async ({ page }) => {
@@ -59,12 +60,21 @@ test("deep links restore the path, and a track page leads back to it", async ({ 
   await expect(playlist(page)).toHaveCount(8);
 });
 
-test("copy link puts the shareable URL on the clipboard", async ({ page, context }) => {
-  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+test("copy link puts the shareable URL on the clipboard", async ({ page }) => {
+  // Record what the page writes rather than reading the system clipboard, which headless
+  // browsers on CI runners may not have.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __copied?: string };
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText: async (text: string) => void (w.__copied = text) },
+    });
+  });
   await page.goto("/#/path?from=Depression&to=Pleasure&n=5");
   await page.getByRole("button", { name: "Copy link" }).click();
   await expect(page.getByRole("button", { name: "Link copied" })).toBeVisible();
-  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  const copied = await page.evaluate(() => (window as unknown as { __copied?: string }).__copied);
   expect(copied).toContain("#/path?");
   expect(copied).toContain("from=Depression");
+  expect(copied).toBe(page.url());
 });
