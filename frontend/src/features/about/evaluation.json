@@ -1,0 +1,16 @@
+{
+  "deam": {
+    "n": 400,
+    "valence_r": 0.82,
+    "arousal_r": 0.84,
+    "contrast_r": 0.61,
+    "predicted_va_corr": 0.8,
+    "rated_va_corr": 0.55,
+    "loudness_vs_v_minus_a": {
+      "model": 0.18,
+      "listeners": -0.02
+    },
+    "octants": null
+  },
+  "tags": null
+}

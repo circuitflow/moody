@@ -250,3 +250,12 @@ button.link { border: none; background: none; padding: 0; color: inherit; text-d
 .shell-footer { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .scan-control { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--ink-2); }
 .scan-control progress { width: 140px; vertical-align: middle; accent-color: var(--series-1); }
+
+/* About */
+.about-page { display: flex; flex-direction: column; gap: 16px; max-width: 900px; }
+.about-page h2, .about-page h3 { margin: 0 0 8px; }
+.about-page h4 { margin: 16px 0 6px; }
+.eval-table { border-collapse: collapse; font-size: 0.875rem; }
+.eval-table th, .eval-table td { text-align: left; padding: 4px 16px 4px 0; border-bottom: 1px solid var(--border); }
+.eval-table td.num { text-align: right; }
+.eval-table tr.eval-split th, .eval-table tr.eval-split td { border-top: 2px solid var(--border); }

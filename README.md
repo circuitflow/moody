@@ -65,6 +65,22 @@ or previews to new apps. Moody therefore analyzes audio it can actually reach: y
 self-hosting, or CC-licensed Jamendo tracks for the public demo. Spotify is used only for listening
 history and playlist export.
 
+<!-- eval:start -->
+### How well it works
+
+**Valence/arousal on DEAM** (400 clips, ratings by listeners; the head was trained on DEAM, so these are in-domain and optimistic):
+
+| | Pearson r |
+|---|---|
+| valence | 0.82 |
+| arousal | 0.84 |
+| valence minus arousal (do the outputs mean different things?) | 0.61 |
+
+Predicted valence and arousal correlate at +0.80, against +0.55 between listeners' ratings: the model leans on one "intensity" axis. Loudness correlates +0.18 with predicted valence minus arousal, -0.02 with rated: loud music looks happier to the model than to people.
+
+Details: [`eval/results/`](eval/results/).
+<!-- eval:end -->
+
 ## Development
 
 Requirements: [uv](https://docs.astral.sh/uv/), Node 22.
