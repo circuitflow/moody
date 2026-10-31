@@ -4,34 +4,29 @@
 #   .github/scripts/push-results.sh BRANCH "message" PATH...   (from the repository root)
 #
 # The branch holds only PATH... A branch made from main would carry main's workflow files, and
-# GitHub refuses pushes from the Actions token that touch .github/workflows.
+# GitHub refuses pushes from the Actions token that touch .github/workflows. The commit is built
+# with a temporary index and commit-tree: no checkout, and the working tree is left alone.
 set -eu
-trap '[ $? -eq 0 ] || echo "::error title=push-results::failed near: $last"' EXIT
-last=start
+step=start
+trap '[ $? -eq 0 ] || echo "::error title=push-results::failed at: $step"' EXIT
 branch=$1
 message=$2
 shift 2
-tmp=$(mktemp -d)
-for p in "$@"; do
-  mkdir -p "$tmp/$(dirname "$p")"
-  cp -R "$p" "$tmp/$p"
-done
 git config user.name "github-actions[bot]"
 git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-last="checkout --orphan"
-git checkout -q --orphan "results-$$"
-git rm -rq --cached . >/dev/null
-for p in "$@"; do
-  mkdir -p "$(dirname "$p")"
-  rm -rf "$p"
-  cp -R "$tmp/$p" "$p"
-  git add -f "$p"
-done
-last="commit"
-git commit -q -m "$message"
+index=$(mktemp)
+rm -f "$index"
+step="add"
+GIT_INDEX_FILE=$index git add -f -- "$@"
+step="write-tree"
+tree=$(GIT_INDEX_FILE=$index git write-tree)
+rm -f "$index"
+step="commit-tree"
+commit=$(git commit-tree "$tree" -m "$message")
+step="push"
 # Report git's own words as an annotation, so a failure is readable without the logs.
-if ! out=$(git push -f origin "HEAD:refs/heads/$branch" 2>&1); then
+if ! out=$(git push -f origin "$commit:refs/heads/$branch" 2>&1); then
   echo "::error title=push-results::$(printf '%s' "$out" | tr '\n' ' ' | cut -c1-900)"
   exit 1
 fi
-echo "pushed $* to $branch"
+echo "pushed $* to $branch ($commit)"
