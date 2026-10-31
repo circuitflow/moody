@@ -166,7 +166,7 @@ Property tests (fast-check):
 
 ## 10. API surface (v1)
 
-Implemented (M1–M3):
+Implemented (M1–M4):
 - `GET /api/health`
 - `GET /api/meta`: counts (including hidden duplicate files), pipeline version, the 30-tag mood vocabulary, octants, `map_fields`
 - `GET /api/tracks?q=&tag=&status=&limit=&cursor=`, `GET /api/tracks/{id}` (with `duplicate_of` and `alternates`, the hidden copies), `GET /api/tracks/{id}/neighbors?k=` (cosine over EffNet embeddings)
@@ -178,7 +178,7 @@ Implemented (M1–M3):
 - `GET|DELETE /api/auth/spotify`, `GET /api/auth/spotify/login?return_to=`, `GET /api/auth/spotify/callback`
 - `GET /api/history`, `POST /api/history/lastfm`, `POST /api/history/spotify`, `GET /api/history/mood?bucket=week|hour&tz=&period=all|year|quarter`, `GET /api/history/top?period=`
 
-Planned (M4): `POST /api/scan` · `GET /api/jobs/{id}` · `GET /api/jobs/{id}/events` (SSE)
+- `POST /api/scan` (the configured `MOODY_LIBRARY_PATH` only; 409 while a scan runs), `GET /api/jobs`, `GET /api/jobs/{id}`, `GET /api/jobs/{id}/events` (SSE: the job as JSON on every change until it ends)
 
 The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend types are generated from it with `openapi-typescript` (`npm run gen:api`). CI fails if either is stale. `moody export-static` writes the same payloads as JSON files for the static demo (`meta.json`, `map.json`, `embeddings.json`, `map-values/`, `tracks/`, `neighbors/`), using the same query functions as the API (`moody.api.queries`).
 
@@ -215,18 +215,26 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
   - most played
 - **Theming:** tokens from the dataviz reference palette, light and dark, with a toggle that overrides the OS setting both ways.
 - **Self-hosting:** `moody serve --ui frontend/dist` serves the built app next to the API.
-- **Demo mode:** `VITE_DATA_SOURCE=static` builds against `data/*.json` from `moody export-static`. Audio previews from Jamendo's CC-licensed URLs come in M4.
+- **Demo mode:** `VITE_DATA_SOURCE=static` builds against `data/*.json` from `moody export-static`. With `--demo tracks.csv` the bundle carries per-track attribution, Jamendo stream URLs (the track page and path player play them) and `credits.json` (`#/credits`, plus a demo banner).
+- **About** (`#/about`): what Moody is and the evaluation numbers, from `frontend/src/features/about/evaluation.json` (written by `eval/render.py`).
+- **Scan from the app:** a footer button when `meta.can_scan`, with progress over SSE; a scan already running is picked up after a reload.
 
 ## 12. Demo, deployment and evaluation
 
-- **Demo bundle:** `demo/build_demo.py` selects about 1,500 CC-BY/CC-BY-SA tracks from MTG-Jamendo (moodtheme split), downloads the audio, runs the pipeline and writes `map.json`, `tracks/*.json` and attribution metadata. Audio is not rehosted; tracks link to Jamendo. The bundle is committed as a release asset, not into git.
-- **GitHub Pages:** a workflow builds the frontend in static mode and deploys it on tags to `main`.
+- **Demo bundle** (`.github/workflows/demo-bundle.yml`, manual; needs the `JAMENDO_CLIENT_ID` secret):
+  - `moody demo select` looks up the MTG-Jamendo mood/theme split-0 **test** tracks on the Jamendo API, keeps CC BY / CC BY-SA tracks of 1–10 minutes that are still online, and picks about 1,500, stratified by tag (rarest first).
+  - Six shards download their MP3s (`moody demo download`, resumable) and run `moody scan` with the real models; a shard fails if more than 5 % of its tracks don't analyze.
+  - `moody demo merge` combines the shard databases (Jamendo's titles and artists win), `moody export-static --demo` writes the bundle, and it's published as a `demo-bundle-YYYYMMDD-HHMM` release asset (a prerelease, never "latest"). Audio is analyzed, never committed or rehosted; the demo streams it from Jamendo.
+- **GitHub Pages** (`pages.yml`, on `v*` tags or manually): downloads the newest bundle, runs a Playwright smoke test against it, builds in static mode and deploys.
+- **README media** (`media.yml`, manual): records the README GIFs from the newest bundle (`npm run media`) and pushes them to the `readme-media` branch.
 - **Self-hosting:**
   - `docker compose up`: the backend image with essentia-tensorflow and pulled models, the library mounted read-only at `/music`, and the frontend served by nginx proxying `/api`.
   - Native: `uv run moody serve` plus `npm run dev`.
 - **Evaluation (`eval/`):**
   - V/A regression on the DEAM test split: Pearson r, R² and CCC for the chosen head, plus a comparison of the emomusic and DEAM heads.
-  - Tag ROC-AUC/PR-AUC on the MTG-Jamendo moodtheme split-0 test set.
+  - Tag ROC-AUC/PR-AUC on the demo tracks, which are held-out MTG-Jamendo moodtheme split-0 test tracks (a CC BY / BY-SA, tag-stratified subset; prevalence is reported next to PR-AUC). Computed by `eval/tags_moodtheme.py` in the bundle job and pushed to the `eval/tags-moodtheme` branch.
+  - 2007 vs 2026 on DEAM: exact octant, within one octant and mean angle error for the 2007 tree and the 2026 head against the octant of listeners' ratings, with a most-common-octant baseline and a subset of clips rated clearly away from neutral (`moody.evaluation.octant_report`, part of `eval-deam.yml`).
+  - `eval/render.py` writes the README's "How well it works" section and the About page's data.
   - Results go to `eval/results/*.json`, and a script renders the README table.
   - **2007 vs 2026** (see `legacy/README.md`):
     - (a) On the DEAM test split, map ground-truth V/A to Russell octants and compare octant accuracy and mean angular error for the 2007 tree (on Essentia-derived thesis features), the 2007 k-NN, and the 2026 DEAM head.
@@ -270,7 +278,7 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
   - `moody scan`, golden-file tests
 - **M2 (explore UI) ✅ (2026-10-31):** map and track APIs, the mood map, the track view, the list view, static export, end-to-end tests (`docs/superpowers/plans/2026-10-31-moody-m2.md`).
 - **M3 (playlists + listening history) ✅ (2026-10-31):** in-browser path planner and builder, saved playlists + M3U, Spotify sign-in and export, Last.fm / Spotify history import, the History page (`docs/superpowers/plans/2026-10-31-moody-m3.md`).
-- **M4 (showcase):** demo bundle, Pages deploy, eval report, README with GIFs; scan from the UI with jobs and SSE progress.
+- **M4 (showcase) ✅ (2026-11-01):** Jamendo demo bundle built in Actions, Pages deploy with a smoke test, credits and audio in the demo, evaluation report (README + About page, 2007 vs 2026 octants, tag ROC-AUC), scan from the UI with SSE progress, README GIF recorder (`docs/superpowers/plans/2026-11-01-moody-m4.md`).
 - **M5 (stretch):** CLAP text search, lyrics fusion, a custom V/A head on EffNet embeddings.
 
 ## 16. Resolved decisions

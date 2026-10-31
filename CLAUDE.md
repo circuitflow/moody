@@ -18,6 +18,10 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Listening history: `uv run moody history lastfm <user> | spotify-export <zip> | spotify | status`.
 - Spotify/Last.fm need `MOODY_SPOTIFY_CLIENT_ID` / `MOODY_LASTFM_API_KEY` (e.g. in `backend/.env`, gitignored).
 - Local Playwright reuses a server already on :4173. If e2e runs an old build, stop that `vite preview` by its exact PID.
+- Demo bundle: `moody demo select|download|merge`, then `moody export-static <dir> --demo tracks.csv` (CI: the Demo bundle workflow; needs the `JAMENDO_CLIENT_ID` secret).
+- Evaluation summary: `uv run python ../eval/render.py` (README section + About page data) after new results land in `eval/results/`.
+- README GIFs (in `frontend/`): put a bundle in `public/data`, then `npm run media` (writes `docs/media/*.gif`).
+- Scan from the app: set `MOODY_LIBRARY_PATH` (and `MOODY_FAKE_ANALYZER=1` to try it without models).
 
 ## Conventions
 - mypy `--strict` and ruff must pass; tests must pass with `-W error`.
@@ -33,3 +37,5 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Outbound HTTP (Spotify, Last.fm) goes through the app's `httpx2.Client` (`app.state.http`). Tests pass a
   `MockTransport` fake (`tests/fake_spotify.py`, `tests/fake_lastfm.py`); CI never calls real services.
 - Spotify Web API (2026): `POST /me/playlists`, `POST /playlists/{id}/items`, search `limit` ≤ 10.
+- Rich colours CLI output under GitHub Actions: tests on `CliRunner` output strip ANSI codes first.
+- A test that starts a background scan must wait for it (`app.state.scans.join()`) before the app shuts down.
