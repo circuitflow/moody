@@ -109,6 +109,40 @@ class Embedding(Base):
     track: Mapped[Track] = relationship(back_populates="embeddings")
 
 
+class Playlist(Base):
+    """A saved mood-path playlist. ``params`` keeps what rebuilds it in the path builder."""
+
+    __tablename__ = "playlists"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(Text)
+    start_valence: Mapped[float]
+    start_arousal: Mapped[float]
+    end_valence: Mapped[float]
+    end_arousal: Mapped[float]
+    via_valence: Mapped[float | None]
+    via_arousal: Mapped[float | None]
+    params: Mapped[dict[str, Any]] = mapped_column(default=dict)
+    created_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+    items: Mapped[list[PlaylistItem]] = relationship(
+        back_populates="playlist", cascade="all, delete-orphan", order_by="PlaylistItem.position"
+    )
+
+
+class PlaylistItem(Base):
+    __tablename__ = "playlist_items"
+
+    playlist_id: Mapped[int] = mapped_column(
+        ForeignKey("playlists.id", ondelete="CASCADE"), primary_key=True
+    )
+    position: Mapped[int] = mapped_column(primary_key=True)
+    track_id: Mapped[int] = mapped_column(ForeignKey("tracks.id", ondelete="CASCADE"), index=True)
+
+    playlist: Mapped[Playlist] = relationship(back_populates="items")
+    track: Mapped[Track] = relationship()
+
+
 class Job(Base):
     __tablename__ = "jobs"
 

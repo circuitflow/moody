@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { PlaylistCreate } from "../api/types";
 import { decodeEmbeddings } from "../features/path/embeddings";
 import { useDataSource } from "./context";
 
@@ -44,5 +45,39 @@ export function useStyleVectors() {
     queryKey: ["embeddings"],
     queryFn: async () => decodeEmbeddings(await source.embeddings()),
     staleTime: Infinity,
+  });
+}
+
+export function usePlaylists() {
+  const source = useDataSource();
+  return useQuery({ queryKey: ["playlists"], queryFn: () => source.playlists() });
+}
+
+export function usePlaylist(id: number) {
+  const source = useDataSource();
+  return useQuery({ queryKey: ["playlist", id], queryFn: () => source.playlist(id) });
+}
+
+export function useSavePlaylist() {
+  const source = useDataSource();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: PlaylistCreate) => source.savePlaylist(body),
+    onSuccess: (saved) => {
+      client.setQueryData(["playlist", saved.id], saved);
+      void client.invalidateQueries({ queryKey: ["playlists"] });
+    },
+  });
+}
+
+export function useDeletePlaylist() {
+  const source = useDataSource();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => source.deletePlaylist(id),
+    onSuccess: (_, id) => {
+      client.removeQueries({ queryKey: ["playlist", id] });
+      void client.invalidateQueries({ queryKey: ["playlists"] });
+    },
   });
 }

@@ -164,6 +164,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/playlists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Playlists */
+        get: operations["list_playlists_api_playlists_get"];
+        put?: never;
+        /** Create Playlist */
+        post: operations["create_playlist_api_playlists_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Playlist */
+        get: operations["get_playlist_api_playlists__playlist_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Playlist */
+        delete: operations["delete_playlist_api_playlists__playlist_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/playlists/{playlist_id}/m3u": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Playlist M3U
+         * @description The playlist as an M3U8 file with absolute paths (Apple Music: File → Library → Import).
+         */
+        get: operations["playlist_m3u_api_playlists__playlist_id__m3u_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -318,6 +374,102 @@ export interface components {
             name: string;
             /** Angle Deg */
             angle_deg: number;
+        };
+        /**
+         * PlaylistCreate
+         * @description A playlist from the path builder: tracks in order, plus how it was made.
+         */
+        PlaylistCreate: {
+            /** Name */
+            name: string;
+            /** Track Ids */
+            track_ids: number[];
+            /** Start */
+            start: [
+                number,
+                number
+            ];
+            /** End */
+            end: [
+                number,
+                number
+            ];
+            /** Via */
+            via?: [
+                number,
+                number
+            ] | null;
+            /**
+             * Params
+             * @description Path builder settings (URL search, filters)
+             */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        /** PlaylistDetail */
+        PlaylistDetail: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Count */
+            count: number;
+            /** Start */
+            start: [
+                number,
+                number
+            ];
+            /** End */
+            end: [
+                number,
+                number
+            ];
+            /** Via */
+            via: [
+                number,
+                number
+            ] | null;
+            /** Params */
+            params: {
+                [key: string]: unknown;
+            };
+            /** Tracks */
+            tracks: components["schemas"]["TrackSummary"][];
+        };
+        /** PlaylistSummary */
+        PlaylistSummary: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Count */
+            count: number;
+            /** Start */
+            start: [
+                number,
+                number
+            ];
+            /** End */
+            end: [
+                number,
+                number
+            ];
+            /** Via */
+            via: [
+                number,
+                number
+            ] | null;
         };
         /** SegmentOut */
         SegmentOut: {
@@ -699,6 +851,150 @@ export interface operations {
                 };
                 content: {
                     "audio/*": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_playlists_api_playlists_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistSummary"][];
+                };
+            };
+        };
+    };
+    create_playlist_api_playlists_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlaylistCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_playlist_api_playlists__playlist_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlaylistDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_playlist_api_playlists__playlist_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    playlist_m3u_api_playlists__playlist_id__m3u_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                playlist_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description M3U8 playlist */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "audio/x-mpegurl": unknown;
                 };
             };
             /** @description Validation Error */

@@ -10,6 +10,7 @@ import { Shell } from "./components/Shell";
 import { MapPage } from "./pages/MapPage";
 import { ListPage } from "./pages/ListPage";
 import { PathRoute } from "./pages/PathPage";
+import { PlaylistPage, PlaylistsPage } from "./pages/PlaylistsPage";
 import { TrackPage } from "./pages/TrackPage";
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -28,7 +29,25 @@ const pathRoute = createRoute({
   component: PathRoute,
 });
 
-const routeTree = rootRoute.addChildren([mapRoute, listRoute, pathRoute, trackRoute]);
+const playlistsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/playlists",
+  component: PlaylistsPage,
+});
+const playlistRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/playlists/$playlistId",
+  component: PlaylistPage,
+});
+
+const routeTree = rootRoute.addChildren([
+  mapRoute,
+  listRoute,
+  pathRoute,
+  playlistsRoute,
+  playlistRoute,
+  trackRoute,
+]);
 
 /** Hash history so deep links work on static hosting (GitHub Pages). */
 export function createAppRouter(history: RouterHistory = createHashHistory()) {

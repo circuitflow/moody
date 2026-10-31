@@ -207,3 +207,13 @@ button[aria-pressed="true"] { border-color: var(--ink-2); font-weight: 600; }
 .path-pos { text-align: center; color: var(--muted); }
 .path-va { font-size: 0.75rem; }
 .path-player { display: flex; gap: 8px; }
+.path-save { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.path-save form { display: flex; gap: 6px; flex: 1 1 100%; }
+.path-save form input { flex: 1; min-width: 0; }
+.path-save .note { flex: 1 1 100%; margin: 0; }
+.playlists-head { display: flex; justify-content: space-between; align-items: baseline; }
+.playlist-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.playlist-list li { display: flex; justify-content: space-between; gap: 12px; }
+.playlist-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+a.button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; text-decoration: none; }
+.playlist-tracks { max-width: 640px; }

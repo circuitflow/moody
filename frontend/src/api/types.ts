@@ -10,3 +10,6 @@ export type TrackSummary = S["TrackSummary"];
 export type Neighbor = S["Neighbor"];
 export type Segment = S["SegmentOut"];
 export type Embeddings = S["Embeddings"];
+export type PlaylistCreate = S["PlaylistCreate"];
+export type PlaylistSummary = S["PlaylistSummary"];
+export type PlaylistDetail = S["PlaylistDetail"];

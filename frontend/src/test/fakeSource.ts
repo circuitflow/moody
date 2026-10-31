@@ -1,5 +1,15 @@
 /** A small deterministic in-memory library for component tests. */
-import type { Embeddings, MapValues, Meta, MoodMap, Neighbor, TrackDetail } from "../api/types";
+import type {
+  Embeddings,
+  MapValues,
+  Meta,
+  MoodMap,
+  Neighbor,
+  PlaylistCreate,
+  PlaylistDetail,
+  PlaylistSummary,
+  TrackDetail,
+} from "../api/types";
 import { encodeEmbeddings } from "../features/path/embeddings";
 import type { DataSource } from "../data/source";
 
@@ -96,5 +106,40 @@ export class FakeSource implements DataSource {
   }
   audioUrl(id: number): string | null {
     return `/api/audio/${id}`;
+  }
+
+  // Saved playlists, in memory.
+  readonly canSave: boolean = true;
+  saved: PlaylistDetail[] = [];
+  private nextId = 1;
+  async playlists(): Promise<PlaylistSummary[]> {
+    return [...this.saved].reverse().map((p) => ({
+      id: p.id, name: p.name, created_at: p.created_at, count: p.count, start: p.start, end: p.end, via: p.via,
+    }));
+  }
+  async playlist(id: number): Promise<PlaylistDetail> {
+    const p = this.saved.find((x) => x.id === id);
+    if (!p) throw new Error("playlist not found");
+    return p;
+  }
+  async savePlaylist(body: PlaylistCreate): Promise<PlaylistDetail> {
+    const tracks = body.track_ids.map((id) => {
+      const t = this.tracks.find((x) => x.id === id);
+      if (!t) throw new Error(`unknown track ids: ${id}`);
+      const { id: tid, title, artist, album, duration_s, status, valence, arousal, octant, top_tags } = fakeDetail(t);
+      return { id: tid, title, artist, album, duration_s, status, valence, arousal, octant, top_tags };
+    });
+    const saved: PlaylistDetail = {
+      id: this.nextId++, name: body.name.trim(), created_at: "2026-10-31T12:00:00Z", count: tracks.length,
+      start: body.start, end: body.end, via: body.via ?? null, params: body.params ?? {}, tracks,
+    };
+    this.saved.push(saved);
+    return saved;
+  }
+  async deletePlaylist(id: number): Promise<void> {
+    this.saved = this.saved.filter((x) => x.id !== id);
+  }
+  m3uUrl(id: number): string | null {
+    return `/api/playlists/${id}/m3u`;
   }
 }

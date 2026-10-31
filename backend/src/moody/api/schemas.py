@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class TrackSummary(BaseModel):
@@ -125,3 +128,49 @@ class Neighbor(BaseModel):
     valence: float
     arousal: float
     octant: str
+
+
+MoodPoint = tuple[float, float]
+
+
+class PlaylistCreate(BaseModel):
+    """A playlist from the path builder: tracks in order, plus how it was made."""
+
+    name: str = Field(min_length=1, max_length=200)
+    track_ids: list[int] = Field(min_length=1, max_length=500)
+    start: MoodPoint
+    end: MoodPoint
+    via: MoodPoint | None = None
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="Path builder settings (URL search, filters)"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def _strip_name(cls, v: str) -> str:
+        v = v.strip()
+        if not v:
+            raise ValueError("name must not be blank")
+        return v
+
+    @field_validator("track_ids")
+    @classmethod
+    def _distinct(cls, v: list[int]) -> list[int]:
+        if len(set(v)) != len(v):
+            raise ValueError("track_ids must be distinct")
+        return v
+
+
+class PlaylistSummary(BaseModel):
+    id: int
+    name: str
+    created_at: datetime
+    count: int
+    start: MoodPoint
+    end: MoodPoint
+    via: MoodPoint | None
+
+
+class PlaylistDetail(PlaylistSummary):
+    params: dict[str, Any]
+    tracks: list[TrackSummary]

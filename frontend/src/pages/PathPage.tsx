@@ -4,7 +4,7 @@
  * so this page works the same in the static demo. The path lives in the URL, so it can be shared.
  */
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MoodMap } from "../api/types";
 import { useDataSource } from "../data/context";
 import { useMeta, useMoodMap, useStyleVectors } from "../data/hooks";
@@ -22,6 +22,7 @@ import {
   type PathSearch,
 } from "../features/path/anchors";
 import { PathOverlay, type HandleKey } from "../features/path/PathOverlay";
+import { SavePlaylist } from "../features/path/SavePlaylist";
 import { alignStyle, planPath, type PathRequest, type Point } from "../features/path/planner";
 import { useLibrary } from "../state/library";
 
@@ -175,6 +176,19 @@ function PathBuilder({
         <PathPanel
           map={map}
           plan={plan}
+          save={
+            <SavePlaylist
+              trackIds={plan.rows.map((r) => map.id[r]!)}
+              start={start}
+              end={end}
+              via={via}
+              defaultName={`${startName ?? "Custom point"} → ${endName ?? "Custom point"}`}
+              params={{
+                search,
+                filters: { query: filters.query, tags: [...filters.tags], octants: [...filters.octants] },
+              }}
+            />
+          }
           eligibleCount={eligibleCount}
           length={length}
           smoothness={smoothness}
@@ -198,6 +212,7 @@ function PathBuilder({
 interface PanelProps {
   map: MoodMap;
   plan: ReturnType<typeof planPath>;
+  save: ReactNode;
   eligibleCount: number;
   length: number;
   smoothness: number;
@@ -306,6 +321,8 @@ function PathPanel(p: PanelProps) {
         <p className="note muted">Too few different artists here: some artists repeat within three tracks.</p>
       )}
       {!p.hasStyle && <p className="note muted">Sound similarity isn't available, so only mood is used.</p>}
+
+      {p.save}
 
       {playable && (
         <div className="path-player">
