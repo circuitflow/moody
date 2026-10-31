@@ -98,7 +98,8 @@ function Handle({ ctx, spec, onMove }: { ctx: OverlayContext; spec: HandleSpec; 
       onClick={(e) => e.stopPropagation()}
       onKeyDown={onKeyDown}
     >
-      <circle r={14} className="path-handle-hit" />
+      {/* Hit area over the dot and its label, so pressing anywhere on the handle drags it. */}
+      <rect x={-14} y={-28} width={64} height={42} rx={6} className="path-handle-hit" />
       <circle r={8} className="path-handle-dot" />
       <text x={12} y={-12}>
         {spec.label}

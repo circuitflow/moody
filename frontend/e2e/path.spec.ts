@@ -23,8 +23,8 @@ test("builds a 20-track path from Distress to Relaxation in the static demo", as
 test("dragging the end point re-plans and updates the link", async ({ page }) => {
   await page.goto("/#/path?n=10");
   const before = await playlist(page).allTextContents();
-  const end = page.getByRole("button", { name: /^End: valence/ });
-  const box = (await end.boundingBox())!;
+  // Aim at the dot itself: the handle's box also holds its label, whose width depends on fonts.
+  const box = (await page.locator(".path-handle-end .path-handle-dot").boundingBox())!;
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(box.x - 60, box.y - 260, { steps: 10 });
