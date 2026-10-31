@@ -33,6 +33,7 @@ jobs:
           gh release download "$tag" --repo "${{ github.repository }}" --pattern demo-bundle.tar.gz --dir ..
           mkdir -p public/data && tar xzf ../demo-bundle.tar.gz -C public/data
       - run: npx playwright install --with-deps chromium
+        timeout-minutes: 10
       - run: sudo apt-get install -y --no-install-recommends ffmpeg
       - run: npm run media
         env:

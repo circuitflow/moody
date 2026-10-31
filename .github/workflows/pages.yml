@@ -45,6 +45,7 @@ jobs:
           tar xzf ../demo-bundle.tar.gz -C public/data
           echo "Demo data: $tag ($(ls public/data/tracks | wc -l) tracks)" >> "$GITHUB_STEP_SUMMARY"
       - name: Smoke-test the demo in a browser
+        timeout-minutes: 15
         run: |
           npx playwright install --with-deps chromium
           npx playwright test e2e/smoke.spec.ts
