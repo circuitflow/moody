@@ -11,6 +11,9 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Static demo build: `VITE_DATA_SOURCE=static VITE_BASE=/moody/ npm run build`
 - After changing API routes or schemas: `uv run moody openapi ../frontend/openapi.json` (CI fails if stale).
 - Local end-to-end without models: `uv run moody scan <folder> --fake`, then `uv run moody serve`.
+- Frontend types from the API: `npm run gen:api` (after regenerating `openapi.json`; CI fails if stale).
+- Static bundle: `uv run moody export-static <dir>` (same JSON shapes as the API).
+- Browser tests (in `frontend/`): `npm run e2e:data` (deterministic fixture into `public/data`), then `npm run e2e`.
 
 ## Conventions
 - mypy `--strict` and ruff must pass; tests must pass with `-W error`.

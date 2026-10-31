@@ -11,7 +11,10 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "gen:api": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.d.ts"
+    "gen:api": "npx --yes openapi-typescript@7.13.0 openapi.json -o src/api/schema.d.ts",
+    "e2e:data": "cd ../backend && uv run python ../frontend/e2e/make_fixture.py ../frontend/public/data",
+    "e2e:serve": "VITE_DATA_SOURCE=static vite build --outDir dist-e2e && vite preview --outDir dist-e2e --host 127.0.0.1 --port 4173 --strictPort",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.104.0",
@@ -26,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@types/d3-polygon": "^3.0.2",
