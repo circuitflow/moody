@@ -1,0 +1,48 @@
+# Records the README GIFs from the latest demo bundle (manual) and pushes them to the
+# readme-media branch, to be merged into main by hand.
+name: README media
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-fund --no-audit
+      - name: Fetch the latest demo bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("demo-bundle-"))] | sort_by(.createdAt) | last | .tagName // empty')
+          if [ -z "$tag" ]; then echo "::error::No demo-bundle-* release yet."; exit 1; fi
+          gh release download "$tag" --repo "${{ github.repository }}" --pattern demo-bundle.tar.gz --dir ..
+          mkdir -p public/data && tar xzf ../demo-bundle.tar.gz -C public/data
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y --no-install-recommends ffmpeg
+      - run: npm run media
+        env:
+          CI: "1"
+      - name: Push to the readme-media branch
+        run: |
+          cd ..
+          git add -f docs/media/*.gif
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B readme-media
+          git commit -m "README media (run ${{ github.run_id }})"
+          git push -f origin readme-media

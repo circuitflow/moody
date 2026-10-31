@@ -259,3 +259,4 @@ button.link { border: none; background: none; padding: 0; color: inherit; text-d
 .eval-table th, .eval-table td { text-align: left; padding: 4px 16px 4px 0; border-bottom: 1px solid var(--border); }
 .eval-table td.num { text-align: right; }
 .eval-table tr.eval-split th, .eval-table tr.eval-split td { border-top: 2px solid var(--border); }
+.mood-map { user-select: none; -webkit-user-select: none; }

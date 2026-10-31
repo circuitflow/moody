@@ -82,6 +82,7 @@ function Handle({ ctx, spec, onMove }: { ctx: OverlayContext; spec: HandleSpec; 
       aria-label={`${spec.label}: valence ${signed(spec.point[0])}, arousal ${signed(spec.point[1])}. Arrow keys move it.`}
       onPointerDown={(e) => {
         e.stopPropagation();
+        e.preventDefault(); // no text selection while dragging
         e.currentTarget.setPointerCapture?.(e.pointerId);
         dragging.current = true;
       }}
