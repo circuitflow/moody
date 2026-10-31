@@ -241,3 +241,9 @@ button.link { border: none; background: none; padding: 0; color: inherit; text-d
 .table-view th, .table-view td { padding: 2px 10px 2px 0; text-align: left; }
 .table-view td.num { text-align: right; }
 .top-tracks { max-width: 640px; }
+
+/* Demo */
+.demo-banner { margin: 0 0 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink-2); font-size: 0.875rem; }
+.attribution { font-size: 0.8125rem; margin: 2px 0 0; }
+.credits-table { border-collapse: collapse; font-size: 0.875rem; width: 100%; }
+.credits-table th, .credits-table td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }

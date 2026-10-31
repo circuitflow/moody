@@ -1,13 +1,22 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { useDataSource } from "../data/context";
-import { useMeta } from "../data/hooks";
+import { useCredits, useMeta } from "../data/hooks";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Shell() {
   const meta = useMeta();
   const source = useDataSource();
+  const credits = useCredits();
+  const demoTracks = source.kind === "static" ? (credits.data?.length ?? 0) : 0;
   return (
     <div className="shell">
+      {demoTracks > 0 && (
+        <p className="demo-banner" role="note">
+          Demo: {demoTracks.toLocaleString()} Creative Commons tracks from Jamendo, analyzed by Moody.{" "}
+          <Link to="/credits">Credits</Link> ·{" "}
+          <a href="https://github.com/circuitflow/moody#quick-start-self-hosted">Run it on your own music</a>
+        </p>
+      )}
       <header className="shell-header">
         <h1>Moody</h1>
         <nav aria-label="Views">

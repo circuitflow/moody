@@ -6,8 +6,7 @@
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MoodMap } from "../api/types";
-import { useDataSource } from "../data/context";
-import { useMeta, useMoodMap, useStyleVectors } from "../data/hooks";
+import { useAudioUrlFor, useMeta, useMoodMap, useStyleVectors } from "../data/hooks";
 import { visibleMask } from "../features/map/filters";
 import { MapControls } from "../features/map/MapControls";
 import { MoodMapView } from "../features/map/MoodMapView";
@@ -83,7 +82,7 @@ function PathBuilder({
   style: ReturnType<typeof useStyleVectors>["data"] | null;
 }) {
   const navigate = useNavigate();
-  const source = useDataSource();
+  const audioUrlFor = useAudioUrlFor();
   const { filters, setFilters } = useLibrary();
   const [drag, setDrag] = useState<{ key: HandleKey; point: Point } | null>(null);
 
@@ -196,7 +195,7 @@ function PathBuilder({
           endName={endName}
           bend={via !== null}
           hasStyle={aligned !== null && aligned.dims > 0}
-          audioUrl={(id) => source.audioUrl(id)}
+          audioUrl={audioUrlFor}
           onFrom={(name) => update({ from: name })}
           onTo={(name) => update({ to: name })}
           onSwap={() => update({ from: pointSpec(end), to: pointSpec(start) })}

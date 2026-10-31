@@ -20,3 +20,9 @@ export type HistoryImport = S["HistoryImport"];
 export type HistoryMood = S["HistoryMood"];
 export type MoodBucket = S["MoodBucket"];
 export type TopTrack = S["TopTrack"];
+export type Attribution = S["Attribution"];
+/** One line of the demo's credits.json (written by `moody export-static --demo`). */
+export interface Credit extends Attribution {
+  id: number;
+  audio_url?: string | null;
+}

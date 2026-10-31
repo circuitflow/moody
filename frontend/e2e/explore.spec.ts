@@ -56,7 +56,7 @@ test("clicking a point opens its track page", async ({ page }) => {
   await expect(page.getByRole("img", { name: /Valence and arousal over/ })).toBeVisible();
   await expect(page.locator(".trajectory .series")).toHaveCount(2);
   await expect(page.getByLabel("2007 vs 2026")).toBeVisible();
-  await expect(page.getByText("Audio playback is available when self-hosting Moody.")).toBeVisible();
+  await expect(page.locator("audio")).toHaveAttribute("src", /data\/audio\/\d+\.wav$/); // demo stream
   await expect(page.getByLabel("Similar tracks").getByRole("link")).toHaveCount(10);
 });
 

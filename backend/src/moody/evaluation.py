@@ -96,3 +96,44 @@ def signal_correlations(
             }
         out[name] = row
     return out
+
+
+def roc_auc(scores: npt.ArrayLike, labels: npt.ArrayLike) -> float:
+    """Area under the ROC curve: the chance a random positive outranks a random negative (ties
+    count half). Mann-Whitney U with average ranks. NaN without both classes."""
+    s = np.asarray(scores, dtype=np.float64)
+    y = np.asarray(labels, dtype=bool)
+    n_pos, n_neg = int(y.sum()), int((~y).sum())
+    if n_pos == 0 or n_neg == 0:
+        return float("nan")
+    order = np.argsort(s, kind="mergesort")
+    ranks = np.empty(len(s), dtype=np.float64)
+    sorted_s = s[order]
+    i = 0
+    while i < len(s):
+        j = i
+        while j + 1 < len(s) and sorted_s[j + 1] == sorted_s[i]:
+            j += 1
+        ranks[order[i : j + 1]] = (i + j) / 2 + 1  # average rank for ties
+        i = j + 1
+    u = ranks[y].sum() - n_pos * (n_pos + 1) / 2
+    return float(u / (n_pos * n_neg))
+
+
+def average_precision(scores: npt.ArrayLike, labels: npt.ArrayLike) -> float:
+    """Area under the precision-recall curve (step-wise, as in scikit-learn). Depends on how
+    common the label is, so report it with its prevalence. NaN without positives."""
+    s = np.asarray(scores, dtype=np.float64)
+    y = np.asarray(labels, dtype=bool)
+    if not y.any():
+        return float("nan")
+    order = np.argsort(-s, kind="mergesort")
+    y_sorted = y[order]
+    s_sorted = s[order]
+    # Evaluate only at the last index of each run of equal scores (thresholds).
+    last = np.r_[np.flatnonzero(np.diff(s_sorted)), len(s) - 1]
+    tp = np.cumsum(y_sorted)[last]
+    precision = tp / (last + 1)
+    recall = tp / y.sum()
+    prev_recall = np.r_[0.0, recall[:-1]]
+    return float(np.sum((recall - prev_recall) * precision))

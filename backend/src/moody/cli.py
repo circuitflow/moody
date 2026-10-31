@@ -25,6 +25,11 @@ history_app = typer.Typer(
     help="Import listening history (Last.fm, Spotify) and see how much of it matches your library.",
 )
 app.add_typer(history_app, name="history")
+demo_app = typer.Typer(
+    no_args_is_help=True,
+    help="Build the public demo from CC-licensed Jamendo tracks (see the demo-bundle workflow).",
+)
+app.add_typer(demo_app, name="demo")
 
 ModelsDir = Annotated[
     Path | None, typer.Option("--dir", help="Models directory (default: MOODY_MODELS_DIR).")
@@ -168,14 +173,20 @@ def scan(
 def export_static_cmd(
     out: Annotated[Path, typer.Argument(help="Output folder, e.g. ../frontend/public/data")],
     k: Annotated[int, typer.Option(help="Neighbors per track.")] = 10,
+    demo: Annotated[
+        Path | None,
+        typer.Option(help="Demo tracks CSV: adds Jamendo credits and stream URLs.", exists=True),
+    ] = None,
 ) -> None:
     """Export the analyzed library as static JSON for the frontend's static mode."""
+    from moody.demo import read_csv
     from moody.export import export_static
     from moody.store import init_db, session_factory
 
     engine = init_db(get_settings().database_url)
     try:
-        report = export_static(session_factory(engine), out, k=k)
+        tracks = read_csv(demo) if demo else None
+        report = export_static(session_factory(engine), out, k=k, demo=tracks)
     finally:
         engine.dispose()
     typer.echo(f"exported {report.tracks} tracks ({report.files} files) to {out}")
@@ -404,3 +415,96 @@ def history_status() -> None:
         )
     if newly:
         typer.echo(f"{newly:,} more plays matched after recent scans")
+
+
+JamendoId = Annotated[
+    str,
+    typer.Option(
+        envvar=["JAMENDO_CLIENT_ID", "MOODY_JAMENDO_CLIENT_ID"],
+        help="Jamendo API client id (free at devportal.jamendo.com).",
+        show_default=False,
+    ),
+]
+
+
+@demo_app.command("select")
+def demo_select(
+    split: Annotated[Path, typer.Argument(exists=True, help="MTG-Jamendo split TSV.")],
+    out: Annotated[Path, typer.Argument(help="Where to write tracks.csv.")],
+    client_id: JamendoId,
+    n: Annotated[int, typer.Option(help="How many tracks to pick.")] = 1500,
+    seed: Annotated[int, typer.Option()] = 0,
+) -> None:
+    """Pick CC BY / CC BY-SA tracks from the split, stratified by mood/theme tag."""
+    import httpx2
+
+    from moody import demo
+
+    tracks = demo.load_split(split)
+    with httpx2.Client(timeout=30.0) as http:
+        found, report = demo.eligible_tracks(
+            demo.Jamendo(http, client_id),
+            tracks,
+            on_batch=lambda done, total: typer.echo(f"  looked up {done}/{total}", err=True),
+        )
+    chosen = demo.stratify(found, n, seed=seed)
+    demo.write_csv(chosen, out)
+    licences = ", ".join(f"{k} {v}" for k, v in report.licenses.most_common())
+    typer.echo(
+        f"split: {report.in_split} tracks; still on Jamendo: {report.available} ({licences}); "
+        f"CC BY or BY-SA, 1-10 min: {report.licensed}; selected: {len(chosen)} -> {out}"
+    )
+
+
+@demo_app.command("download")
+def demo_download(
+    tracks_csv: Annotated[Path, typer.Argument(exists=True)],
+    dest: Annotated[Path, typer.Argument(help="Folder for <jamendo id>.mp3 files.")],
+    shard: Annotated[str, typer.Option(help="This shard, as INDEX/COUNT (e.g. 0/6).")] = "0/1",
+    workers: Annotated[int, typer.Option()] = 4,
+) -> None:
+    """Download one shard's audio (resumable)."""
+    import httpx2
+
+    from moody import demo
+
+    index, count = (int(x) for x in shard.split("/"))
+    mine = demo.shard(demo.read_csv(tracks_csv), index, count)
+    with httpx2.Client(timeout=60.0) as http:
+        report = demo.download(mine, dest, http, workers=workers)
+    typer.echo(
+        f"shard {shard}: {report.downloaded} downloaded, {report.present} already there, "
+        f"{len(report.failed)} failed"
+    )
+    if len(report.failed) > len(mine) // 10:
+        typer.echo(f"too many failures: {report.failed[:20]}", err=True)
+        raise typer.Exit(1)
+
+
+@demo_app.command("merge")
+def demo_merge(
+    tracks_csv: Annotated[Path, typer.Argument(exists=True)],
+    shards: Annotated[list[Path], typer.Argument(exists=True, help="Shard moody.db files.")],
+) -> None:
+    """Merge shard databases into this data dir's database, with Jamendo's metadata."""
+    from sqlalchemy import create_engine
+
+    from moody import demo
+    from moody.ingest.duplicates import apply_duplicates
+    from moody.store import init_db, session_factory
+
+    target = init_db(get_settings().database_url)
+    sources = [create_engine(f"sqlite:///{p}") for p in shards]
+    try:
+        copied = demo.merge(sources, target)
+        with session_factory(target)() as session:
+            named = demo.apply_metadata(session, demo.read_csv(tracks_csv))
+            dupes = apply_duplicates(session)
+    finally:
+        for e in sources:
+            e.dispose()
+        target.dispose()
+    typer.echo(
+        f"merged {copied} tracks from {len(shards)} shards; metadata for {named}; "
+        f"{dupes.alternates} duplicate recordings hidden"
+    )

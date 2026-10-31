@@ -1,0 +1,148 @@
+# Builds the public demo bundle: CC BY / CC BY-SA tracks from the MTG-Jamendo mood/theme test
+# split, analyzed with the real models, exported as static JSON with credits, and published as a
+# release asset (demo-bundle-YYYYMMDD-HHMM). The Pages workflow deploys the latest one.
+# Audio is downloaded from Jamendo for analysis only; it is never committed or rehosted.
+#
+# Needs the repository secret JAMENDO_CLIENT_ID (free at https://devportal.jamendo.com).
+name: Demo bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      n:
+        description: How many tracks to pick
+        default: "1500"
+      shards:
+        description: Parallel analysis jobs (must match the matrix below)
+        default: "6"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: demo-bundle
+  cancel-in-progress: false
+
+env:
+  SPLIT_URL: https://raw.githubusercontent.com/MTG/mtg-jamendo-dataset/master/data/splits/split-0/autotagging_moodtheme-test.tsv
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check for the Jamendo client id
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+        run: |
+          if [ -z "$JAMENDO_CLIENT_ID" ]; then
+            echo "::error::Add the JAMENDO_CLIENT_ID repository secret (free at https://devportal.jamendo.com)."
+            exit 1
+          fi
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - run: curl -fsSL "$SPLIT_URL" -o ../split.tsv
+      - name: Select tracks
+        env:
+          JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
+        run: uv run moody demo select ../split.tsv ../tracks.csv --n "${{ inputs.n }}" | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: tracks
+          path: |
+            tracks.csv
+            split.tsv
+
+  analyze:
+    needs: select
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5]
+    env:
+      MOODY_MODELS_DIR: ${{ github.workspace }}/.models
+      MOODY_DATA_DIR: ${{ github.workspace }}/shard-data
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: actions/download-artifact@v7
+        with:
+          name: tracks
+          path: ${{ github.workspace }}
+      - uses: actions/cache@v6
+        with:
+          path: .models
+          key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
+      - run: uv sync --frozen --extra analysis
+      - run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
+      - name: Download this shard's audio
+        run: uv run moody demo download ../tracks.csv ../audio --shard "${{ matrix.shard }}/${{ inputs.shards }}"
+      - name: Analyze
+        run: uv run moody scan ../audio --workers 3 | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Check the shard
+        run: |
+          sqlite3 "$MOODY_DATA_DIR/moody.db" "select status, count(*) from tracks group by status" | tee -a "$GITHUB_STEP_SUMMARY"
+          failed=$(sqlite3 "$MOODY_DATA_DIR/moody.db" "select count(*) from tracks where status != 'analyzed'")
+          total=$(sqlite3 "$MOODY_DATA_DIR/moody.db" "select count(*) from tracks")
+          if [ "$total" -eq 0 ] || [ $((failed * 20)) -gt "$total" ]; then
+            echo "::error::$failed of $total tracks not analyzed"; exit 1
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: shard-${{ matrix.shard }}
+          path: shard-data/moody.db
+
+  bundle:
+    needs: analyze
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MOODY_DATA_DIR: ${{ github.workspace }}/merged
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - uses: actions/download-artifact@v7
+        with:
+          path: ${{ github.workspace }}/artifacts
+      - run: uv sync --frozen
+      - name: Merge shards
+        run: uv run moody demo merge ../artifacts/tracks/tracks.csv ../artifacts/shard-*/moody.db | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Export the static bundle
+        run: |
+          uv run moody export-static ../bundle --demo ../artifacts/tracks/tracks.csv | tee -a "$GITHUB_STEP_SUMMARY"
+          cp ../artifacts/tracks/tracks.csv ../bundle/
+      - name: Evaluate mood tags against MTG-Jamendo
+        run: |
+          uv run python ../eval/tags_moodtheme.py ../artifacts/tracks/tracks.csv ../bundle/eval-tags.json
+          cat ../bundle/eval-tags.json | head -c 2000 >> "$GITHUB_STEP_SUMMARY"
+      - name: Publish the bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="demo-bundle-$(date -u +%Y%m%d-%H%M)"
+          n=$(( $(wc -l < ../artifacts/tracks/tracks.csv) - 1 ))
+          tar czf ../demo-bundle.tar.gz -C ../bundle .
+          gh release create "$tag" ../demo-bundle.tar.gz \
+            --repo "${{ github.repository }}" \
+            --title "Demo bundle $(date -u +%Y-%m-%d)" \
+            --notes "Static data for the GitHub Pages demo: $n CC BY / CC BY-SA tracks from the MTG-Jamendo mood/theme test split, analyzed at commit ${{ github.sha }}. Credits are in credits.json and tracks.csv." \
+            --prerelease --latest=false
+          echo "Published $tag" >> "$GITHUB_STEP_SUMMARY"

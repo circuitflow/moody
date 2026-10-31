@@ -31,7 +31,7 @@ export function TrackPage() {
   }
   if (!track.data) return <p className="muted">Loading track…</p>;
   const t = track.data;
-  const audioUrl = source.audioUrl(id);
+  const audioUrl = source.audioUrl(id) ?? t.audio_url ?? null;
   const moodTags = new Set(meta.data?.mood_tags ?? Object.keys(t.tag_probs));
   const topTags = Object.entries(t.tag_probs)
     .filter(([tag]) => moodTags.has(tag))
@@ -51,6 +51,18 @@ export function TrackPage() {
           {t.artist ?? "Unknown artist"}
           {t.album ? ` — ${t.album}` : ""}
         </p>
+        {t.attribution && (
+          <p className="attribution muted">
+            “{t.attribution.title}” by {t.attribution.artist},{" "}
+            <a href={t.attribution.license_url} target="_blank" rel="noreferrer license">
+              {t.attribution.license}
+            </a>
+            , on{" "}
+            <a href={t.attribution.url} target="_blank" rel="noreferrer">
+              Jamendo ↗
+            </a>
+          </p>
+        )}
         {t.valence != null && t.arousal != null && (
           <p className="num">
             <strong>{t.octant}</strong>{" "}

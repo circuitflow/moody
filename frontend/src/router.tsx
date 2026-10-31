@@ -9,6 +9,7 @@ import { parsePathSearch } from "./features/path/anchors";
 import { Shell } from "./components/Shell";
 import { MapPage } from "./pages/MapPage";
 import { ListPage } from "./pages/ListPage";
+import { CreditsPage } from "./pages/CreditsPage";
 import { HistoryPage } from "./pages/HistoryPage";
 import { PathRoute } from "./pages/PathPage";
 import { PlaylistPage, PlaylistsPage } from "./pages/PlaylistsPage";
@@ -47,6 +48,12 @@ const historyRoute = createRoute({
   component: HistoryPage,
 });
 
+const creditsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/credits",
+  component: CreditsPage,
+});
+
 const routeTree = rootRoute.addChildren([
   mapRoute,
   listRoute,
@@ -54,6 +61,7 @@ const routeTree = rootRoute.addChildren([
   playlistsRoute,
   playlistRoute,
   historyRoute,
+  creditsRoute,
   trackRoute,
 ]);
 

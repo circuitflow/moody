@@ -1,5 +1,6 @@
 /** A small deterministic in-memory library for component tests. */
 import type {
+  Credit,
   Embeddings,
   HistoryImport,
   HistoryMood,
@@ -69,7 +70,7 @@ export function fakeDetail(t: FakeTrack): TrackDetail {
 }
 
 export class FakeSource implements DataSource {
-  readonly kind = "api" as const;
+  readonly kind: "api" | "static" = "api";
   constructor(private readonly tracks: FakeTrack[] = FAKE_TRACKS) {}
   async meta(): Promise<Meta> {
     return {
@@ -172,6 +173,10 @@ export class FakeSource implements DataSource {
   mood: Record<"week" | "hour", MoodBucket[]> = { week: [], hour: [] };
   top: TopTrack[] = [];
   moodRequests: string[] = [];
+  creditList: Credit[] = [];
+  async credits(): Promise<Credit[]> {
+    return this.creditList;
+  }
   async historySummary(): Promise<HistorySummary> {
     return this.history;
   }

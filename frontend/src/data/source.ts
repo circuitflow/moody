@@ -4,6 +4,7 @@
  * The static layout is written by `moody export-static` and mirrors the API one-to-one.
  */
 import type {
+  Credit,
   Embeddings,
   HistoryImport,
   HistoryMood,
@@ -53,6 +54,8 @@ export interface DataSource {
   importSpotifyRecent(): Promise<HistoryImport>;
   historyMood(bucket: "week" | "hour", tz: string, period: Period): Promise<HistoryMood>;
   historyTop(period: Period): Promise<TopTrack[]>;
+  /** The demo's track credits (CC licences, Jamendo links, stream URLs); empty when self-hosting. */
+  credits(): Promise<Credit[]>;
 }
 
 const NOT_IN_DEMO = "Saved playlists need the self-hosted app.";
@@ -152,6 +155,9 @@ export class ApiDataSource implements DataSource {
   historyTop(period: Period) {
     return getJson<TopTrack[]>(`${this.baseUrl}/api/history/top?period=${period}`);
   }
+  async credits(): Promise<Credit[]> {
+    return [];
+  }
 }
 
 export class StaticDataSource implements DataSource {
@@ -220,6 +226,11 @@ export class StaticDataSource implements DataSource {
   }
   async historyTop(): Promise<TopTrack[]> {
     return [];
+  }
+  async credits(): Promise<Credit[]> {
+    // Bundles built without demo credits (e.g. a self-made export) have no credits.json.
+    const resp = await fetch(`${this.dataUrl}/credits.json`);
+    return resp.ok ? ((await resp.json()) as Credit[]) : [];
   }
 }
 

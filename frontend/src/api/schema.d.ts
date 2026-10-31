@@ -395,6 +395,28 @@ export interface components {
             format: string;
         };
         /**
+         * Attribution
+         * @description Credit for a CC-licensed demo track (static demo only).
+         */
+        Attribution: {
+            /** Title */
+            title: string;
+            /** Artist */
+            artist: string;
+            /**
+             * License
+             * @description e.g. "CC BY-SA 3.0"
+             */
+            license: string;
+            /** License Url */
+            license_url: string;
+            /**
+             * Url
+             * @description The track's page on Jamendo
+             */
+            url: string;
+        };
+        /**
          * Embeddings
          * @description Compact per-track style vectors for the in-browser path planner, aligned with ``MoodMap.id``.
          *
@@ -869,6 +891,13 @@ export interface components {
              * @default []
              */
             alternates: components["schemas"]["Alternate"][];
+            /** @description Demo only: who made it, licence */
+            attribution?: components["schemas"]["Attribution"] | null;
+            /**
+             * Audio Url
+             * @description Demo only: a streamable URL for the audio
+             */
+            audio_url?: string | null;
         };
         /** TrackPage */
         TrackPage: {

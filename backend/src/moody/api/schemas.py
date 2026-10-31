@@ -53,6 +53,21 @@ class Alternate(BaseModel):
     format: str
 
 
+class Attribution(BaseModel):
+    """Credit for a CC-licensed demo track (static demo only)."""
+
+    title: str
+    artist: str
+    license: str = Field(description='e.g. "CC BY-SA 3.0"')
+    license_url: str
+    url: str = Field(description="The track's page on Jamendo")
+
+
+class Credit(Attribution):
+    id: int
+    audio_url: str | None = None
+
+
 class TrackDetail(TrackSummary):
     bpm: float | None = None
     key: str | None = None
@@ -66,6 +81,8 @@ class TrackDetail(TrackSummary):
     error: str | None = None
     duplicate_of: int | None = Field(None, description="Set when this file is a hidden copy")
     alternates: list[Alternate] = []
+    attribution: Attribution | None = Field(None, description="Demo only: who made it, licence")
+    audio_url: str | None = Field(None, description="Demo only: a streamable URL for the audio")
 
 
 class MoodMap(BaseModel):

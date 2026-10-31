@@ -991,6 +991,42 @@
         "title": "Alternate",
         "description": "Another file of the same recording (e.g. the MP3 next to a WAV), hidden from the catalog."
       },
+      "Attribution": {
+        "properties": {
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "artist": {
+            "type": "string",
+            "title": "Artist"
+          },
+          "license": {
+            "type": "string",
+            "title": "License",
+            "description": "e.g. \"CC BY-SA 3.0\""
+          },
+          "license_url": {
+            "type": "string",
+            "title": "License Url"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The track's page on Jamendo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "artist",
+          "license",
+          "license_url",
+          "url"
+        ],
+        "title": "Attribution",
+        "description": "Credit for a CC-licensed demo track (static demo only)."
+      },
       "Embeddings": {
         "properties": {
           "id": {
@@ -2301,6 +2337,29 @@
             "type": "array",
             "title": "Alternates",
             "default": []
+          },
+          "attribution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Attribution"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Demo only: who made it, licence"
+          },
+          "audio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Url",
+            "description": "Demo only: a streamable URL for the audio"
           }
         },
         "type": "object",

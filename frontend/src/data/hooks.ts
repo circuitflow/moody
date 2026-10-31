@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMemo } from "react";
 import type { PlaylistCreate } from "../api/types";
 import type { Period } from "./source";
 import { decodeEmbeddings } from "../features/path/embeddings";
@@ -130,4 +131,19 @@ export function useHistoryTop(period: Period) {
     enabled: source.canSave,
     placeholderData: (previous) => previous,
   });
+}
+
+export function useCredits() {
+  const source = useDataSource();
+  return useQuery({ queryKey: ["credits"], queryFn: () => source.credits(), staleTime: Infinity });
+}
+
+/** Where to play a track from: the self-hosted file, or (demo) its Jamendo stream. */
+export function useAudioUrlFor(): (id: number) => string | null {
+  const source = useDataSource();
+  const credits = useCredits();
+  return useMemo(() => {
+    const streams = new Map((credits.data ?? []).map((c) => [c.id, c.audio_url ?? null]));
+    return (id: number) => source.audioUrl(id) ?? streams.get(id) ?? null;
+  }, [source, credits.data]);
 }

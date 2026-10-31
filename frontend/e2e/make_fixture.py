@@ -2,8 +2,9 @@
 
 Run from ``backend/``:  uv run python ../frontend/e2e/make_fixture.py ../frontend/public/data
 
-Writes 40 synthetic WAV tracks in an Artist/Album/Title layout, scans them with the fake
-analyzer (deterministic, no models), and exports the library with ``export_static``.
+Writes 40 synthetic WAV tracks, scans them with the fake analyzer (deterministic, no models),
+and exports them like the public demo: files named by a Jamendo-style id, metadata and credits
+from a demo CSV, and "stream" URLs pointing at copies of the WAVs under ``data/audio/``.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from moody.analysis.analyzer import FakeAnalyzer
+from moody.demo import DemoTrack, apply_metadata
 from moody.export import export_static
 from moody.jobs.scan import run_scan
 from moody.store import init_db, session_factory
@@ -38,13 +40,32 @@ def write_wav(path: Path, freq: float) -> None:
 def main(out: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp) / "Music"
+        demo = []
         for i in range(N_TRACKS):
-            write_wav(root / f"Artist {i % 6}" / f"Album {i % 9}" / f"Track {i:02d}.wav", 110 + 17 * i)
+            jid = 1000 + i
+            write_wav(root / f"{jid}.wav", 110 + 17 * i)
+            write_wav(out / "audio" / f"{jid}.wav", 110 + 17 * i)
+            license = "by-sa/4.0" if i % 4 == 0 else "by/3.0"
+            demo.append(
+                DemoTrack(
+                    jamendo_id=jid,
+                    title=f"Track {i:02d}",
+                    artist=f"Artist {i % 6}",
+                    album=f"Album {i % 9}",
+                    duration_s=0.25,
+                    license_url=f"https://creativecommons.org/licenses/{license}/",
+                    share_url=f"https://www.jamendo.com/track/{jid}",
+                    audio_url=f"data/audio/{jid}.wav",  # relative to the page, like BASE_URL
+                    tags=("happy",),
+                )
+            )
         engine = init_db(f"sqlite:///{Path(tmp) / 'moody.db'}")
         try:
             sessions = session_factory(engine)
             run_scan(root, sessions, FakeAnalyzer)
-            report = export_static(sessions, out)
+            with sessions() as session:
+                apply_metadata(session, demo)
+            report = export_static(sessions, out, demo=demo)
         finally:
             engine.dispose()
     print(f"e2e fixture: {report.tracks} tracks, {report.files} files in {out}")
