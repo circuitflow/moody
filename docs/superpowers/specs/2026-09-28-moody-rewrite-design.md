@@ -105,6 +105,10 @@ Two embedding extractors are needed. Essentia's pretrained valence/arousal heads
 ## 7. Data model (SQLite)
 
 - `tracks`: id, content_hash (unique), path, title, artist, album, duration_s, isrc, mb_recording_id, file_mtime, added_at
+  - `duplicate_of` (nullable FK to `tracks.id`): set on extra copies of a recording, e.g. the MP3 next to a WAV. These copies are hidden from every catalog query, the map, neighbors and the static export, and are not analyzed. Files on disk are never touched.
+  - **Grouping rule:** two files are copies when their normalized titles match (from tags or the file name, ignoring case, punctuation and track-number prefixes) and their durations agree within ±2 s. They also need either the same folder and file name, or Discogs-EffNet cosine ≥ 0.95. The embedding check keeps live versions, remixes and covers apart.
+  - **Primary:** lossless first, then the larger file. Tags from the copies fill primary fields that were only derived from file or folder names.
+  - **Lifecycle:** recomputed at the end of every `moody scan`; `moody duplicates` lists the groups.
 - `analyses`: track_id (PK/FK), pipeline_version, valence, arousal, bpm, key, scale, loudness_lufs, mood_probs (JSON), tag_probs (JSON), top_tags (text), features_2007 (JSON), octant_2007, hevner_2007, analyzed_at
 - `segments`: track_id, idx, start_s, valence, arousal (PK track_id + idx)
 - `embeddings`: track_id, model (`discogs-effnet` | `msd-musicnn`), dim, vector (BLOB float32, mean-pooled)
@@ -114,7 +118,7 @@ Two embedding extractors are needed. Essentia's pretrained valence/arousal heads
 - `playlists` and `playlist_items`: id, name, start/end V/A, params (JSON); position, track_id
 - `oauth_tokens`: provider, access/refresh token (stored locally in plaintext; the file lives in the user's data dir, documented)
 
-Migrations use Alembic from M1 onward.
+Migrations use Alembic from M1 onward. On SQLite, foreign keys are switched off while migrating and checked before commit: rebuilding `tracks` in batch mode would otherwise cascade-delete every analysis.
 
 ## 8. Mood-path playlist algorithm
 
@@ -145,8 +149,8 @@ The planner is a pure function over arrays, which makes it property-testable: it
 
 Implemented (M1–M2):
 - `GET /api/health`
-- `GET /api/meta`: counts, pipeline version, the 30-tag mood vocabulary, octants, `map_fields`
-- `GET /api/tracks?q=&tag=&status=&limit=&cursor=`, `GET /api/tracks/{id}`, `GET /api/tracks/{id}/neighbors?k=` (cosine over EffNet embeddings)
+- `GET /api/meta`: counts (including hidden duplicate files), pipeline version, the 30-tag mood vocabulary, octants, `map_fields`
+- `GET /api/tracks?q=&tag=&status=&limit=&cursor=`, `GET /api/tracks/{id}` (with `duplicate_of` and `alternates`, the hidden copies), `GET /api/tracks/{id}/neighbors?k=` (cosine over EffNet embeddings)
 - `GET /api/map`: columnar id, valence, arousal, 2026 octant, top tag(s), 2007 octant, title, artist
 - `GET /api/map/values?field=bpm|loudness|tag:<mood>`: one value per map point, for color-by
 - `GET /api/audio/{id}`: the local file with HTTP Range; only paths stored in the library

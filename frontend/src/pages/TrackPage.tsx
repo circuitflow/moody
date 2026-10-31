@@ -59,7 +59,22 @@ export function TrackPage() {
             </span>
           </p>
         )}
-        {t.status !== "analyzed" && (
+        {t.alternates.length > 0 && (
+          <p className="muted small">
+            Also in your library as {t.alternates.map((a) => a.format).join(", ")} (hidden from the
+            map; Moody uses this file).
+          </p>
+        )}
+        {t.duplicate_of != null && (
+          <p className="small">
+            This file is a copy of{" "}
+            <Link to="/track/$trackId" params={{ trackId: String(t.duplicate_of) }}>
+              another track
+            </Link>{" "}
+            and is hidden from the map.
+          </p>
+        )}
+        {t.status !== "analyzed" && t.duplicate_of == null && (
           <p role="alert">
             Not analyzed ({t.status}){t.error ? `: ${t.error}` : ""}
           </p>

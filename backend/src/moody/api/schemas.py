@@ -43,6 +43,13 @@ class Verdict2007(BaseModel):
     features: Features2007Out
 
 
+class Alternate(BaseModel):
+    """Another file of the same recording (e.g. the MP3 next to a WAV), hidden from the catalog."""
+
+    id: int
+    format: str
+
+
 class TrackDetail(TrackSummary):
     bpm: float | None = None
     key: str | None = None
@@ -54,6 +61,8 @@ class TrackDetail(TrackSummary):
     thesis_2007: Verdict2007 | None = None
     pipeline_version: str | None = None
     error: str | None = None
+    duplicate_of: int | None = Field(None, description="Set when this file is a hidden copy")
+    alternates: list[Alternate] = []
 
 
 class MoodMap(BaseModel):
@@ -87,6 +96,7 @@ class Meta(BaseModel):
     pipeline_version: str
     tracks: int
     analyzed: int
+    duplicates: int = Field(0, description="Extra copies hidden from the catalog")
     mood_tags: list[str]
     octants: list[OctantInfo]
     map_fields: list[str] = Field(description="Valid `field` values for /api/map/values")

@@ -93,3 +93,25 @@ def test_no_tensorflow_startup_noise(tmp_path: Path, clips: dict[str, Path]) -> 
     )
     assert "mlir_graph_optimization" not in result.stderr
     assert "absl::InitializeLog" not in result.stderr
+
+
+@pytest.mark.models
+def test_wav_and_mp3_of_one_recording_count_as_duplicates(
+    analyzer: EssentiaAnalyzer, tmp_path: Path
+) -> None:
+    """Calibrates moody.ingest.duplicates.MIN_SIMILARITY on the real EffNet embeddings."""
+    import numpy as np
+
+    from moody.ingest.duplicates import MIN_SIMILARITY
+
+    def embedding(path: Path) -> np.ndarray:
+        vec = analyzer.analyze(path).embeddings[EFFNET]
+        return vec / np.linalg.norm(vec)
+
+    wav = embedding(write_clip(tmp_path / "pulse.wav", "pulse"))
+    mp3 = embedding(write_clip(tmp_path / "pulse.mp3", "pulse"))
+    other = embedding(write_clip(tmp_path / "calm.wav", "calm"))
+    same, different = float(wav @ mp3), float(wav @ other)
+    print(f"cosine wav/mp3 {same:.4f}, different recordings {different:.4f}")
+    assert same >= MIN_SIMILARITY
+    assert different < MIN_SIMILARITY

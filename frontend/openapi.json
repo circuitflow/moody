@@ -369,6 +369,25 @@
   },
   "components": {
     "schemas": {
+      "Alternate": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "format"
+        ],
+        "title": "Alternate",
+        "description": "Another file of the same recording (e.g. the MP3 next to a WAV), hidden from the catalog."
+      },
       "Features2007Out": {
         "properties": {
           "mode": {
@@ -479,6 +498,12 @@
           "analyzed": {
             "type": "integer",
             "title": "Analyzed"
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates",
+            "description": "Extra copies hidden from the catalog",
+            "default": 0
           },
           "mood_tags": {
             "items": {
@@ -926,6 +951,26 @@
               }
             ],
             "title": "Error"
+          },
+          "duplicate_of": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duplicate Of",
+            "description": "Set when this file is a hidden copy"
+          },
+          "alternates": {
+            "items": {
+              "$ref": "#/components/schemas/Alternate"
+            },
+            "type": "array",
+            "title": "Alternates",
+            "default": []
           }
         },
         "type": "object",

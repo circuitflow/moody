@@ -26,7 +26,8 @@ export function Shell() {
         {meta.isSuccess &&
           `${meta.data.analyzed} of ${meta.data.tracks} tracks analyzed · ` +
             `${source.kind === "static" ? "demo" : "v" + meta.data.version} · ` +
-            `pipeline ${meta.data.pipeline_version}`}
+            `pipeline ${meta.data.pipeline_version}` +
+            (meta.data.duplicates ? ` · ${meta.data.duplicates} duplicate files hidden` : "")}
       </footer>
     </div>
   );

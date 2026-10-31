@@ -51,7 +51,14 @@ def export_static(sessions: sessionmaker[Session], out: Path, *, k: int = 10) ->
             _write(out / "map-values" / field_filename(field), queries.map_values(session, field))
             files += 1
         index = queries.EmbeddingIndex.build(session)
-        track_ids = list(session.scalars(select(Analysis.track_id).order_by(Analysis.track_id)))
+        track_ids = list(
+            session.scalars(
+                select(Analysis.track_id)
+                .join(Analysis.track)
+                .where(queries.PRIMARY)
+                .order_by(Analysis.track_id)
+            )
+        )
         for track_id in track_ids:
             detail = queries.track_detail(session, track_id)
             assert detail is not None

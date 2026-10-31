@@ -16,6 +16,7 @@ test("track page shows mood, charts, thesis card and neighbors", async () => {
   const near = await screen.findByLabelText("Similar tracks");
   expect(await within(near).findAllByRole("link")).toHaveLength(3);
   expect(document.querySelector("audio")?.getAttribute("src")).toBe("/api/audio/1");
+  expect(screen.getByText(/Also in your library as MP3/)).toBeInTheDocument();
 });
 
 test("static source shows no player", async () => {

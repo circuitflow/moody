@@ -13,6 +13,7 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Local end-to-end without models: `uv run moody scan <folder> --fake`, then `uv run moody serve`.
 - Frontend types from the API: `npm run gen:api` (after regenerating `openapi.json`; CI fails if stale).
 - Static bundle: `uv run moody export-static <dir>` (same JSON shapes as the API).
+- Duplicate files (e.g. WAV + MP3 of one recording): `uv run moody duplicates` lists them; `scan` recomputes the groups (`ingest/duplicates.py`).
 - Browser tests (in `frontend/`): `npm run e2e:data` (deterministic fixture into `public/data`), then `npm run e2e`.
 
 ## Conventions
@@ -20,4 +21,6 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Frontend components never call `fetch` directly; they go through the `DataSource` interface (`src/data/source.ts`),
   so the static demo and the API-backed app share all UI code.
 - Valence/arousal are stored normalized to [-1, 1]; the raw model output is in [1, 9].
+- Catalog queries filter `queries.PRIMARY` (`Track.duplicate_of IS NULL`) so hidden copies never reach the UI.
+- Migrations: SQLite batch mode rebuilds the table. `env.py` turns foreign keys off while migrating, so the rebuild can't cascade-delete child rows. Still prefer in-place `ALTER TABLE` where SQLite supports it.
 - Essentia models: V/A heads take **MSD-MusiCNN** embeddings; mood/tag heads take **Discogs-EffNet** embeddings.

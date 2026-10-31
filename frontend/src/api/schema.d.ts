@@ -148,6 +148,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * Alternate
+         * @description Another file of the same recording (e.g. the MP3 next to a WAV), hidden from the catalog.
+         */
+        Alternate: {
+            /** Id */
+            id: number;
+            /** Format */
+            format: string;
+        };
         /** Features2007Out */
         Features2007Out: {
             /** Mode */
@@ -193,6 +203,12 @@ export interface components {
             tracks: number;
             /** Analyzed */
             analyzed: number;
+            /**
+             * Duplicates
+             * @description Extra copies hidden from the catalog
+             * @default 0
+             */
+            duplicates: number;
             /** Mood Tags */
             mood_tags: string[];
             /** Octants */
@@ -334,6 +350,16 @@ export interface components {
             pipeline_version?: string | null;
             /** Error */
             error?: string | null;
+            /**
+             * Duplicate Of
+             * @description Set when this file is a hidden copy
+             */
+            duplicate_of?: number | null;
+            /**
+             * Alternates
+             * @default []
+             */
+            alternates: components["schemas"]["Alternate"][];
         };
         /** TrackPage */
         TrackPage: {

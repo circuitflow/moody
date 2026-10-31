@@ -130,7 +130,8 @@ def scan(
     ing = result.ingest
     typer.echo(
         f"library: {ing.added} new, {ing.moved} moved, {ing.modified} changed, "
-        f"{ing.unchanged} unchanged, {ing.duplicates} duplicates, {ing.failed} unreadable"
+        f"{ing.unchanged} unchanged, {ing.duplicates} identical copies skipped, "
+        f"{ing.failed} unreadable"
         + (
             f"; artist/album from folder names for {ing.filled_from_folders}"
             if ing.filled_from_folders
@@ -138,6 +139,12 @@ def scan(
         )
     )
     typer.echo(f"analysis: {result.analyzed} analyzed, {result.failed} failed")
+    if result.dedupe and result.dedupe.alternates:
+        typer.echo(
+            f"duplicates: {result.dedupe.groups} songs have extra copies; "
+            f"{result.dedupe.alternates} files hidden from the catalog "
+            "(`moody duplicates` lists them)"
+        )
     for file, error in list(result.errors.items())[:10]:
         typer.echo(f"  failed: {file}: {error}", err=True)
     if result.cancelled:
@@ -160,6 +167,45 @@ def export_static_cmd(
     finally:
         engine.dispose()
     typer.echo(f"exported {report.tracks} tracks ({report.files} files) to {out}")
+
+
+@app.command()
+def duplicates() -> None:
+    """List songs that exist as more than one file (e.g. WAV and MP3), and which file Moody
+    uses. Files are never modified or deleted."""
+    from sqlalchemy import select
+
+    from moody.store import Track, init_db, session_factory
+
+    engine = init_db(get_settings().database_url)
+    try:
+        with session_factory(engine)() as session:
+            alternates = list(
+                session.scalars(
+                    select(Track)
+                    .where(Track.duplicate_of.is_not(None))
+                    .order_by(Track.duplicate_of)
+                )
+            )
+            by_primary: dict[int, list[Track]] = {}
+            for alt in alternates:
+                by_primary.setdefault(alt.duplicate_of or 0, []).append(alt)
+            for primary_id, alts in by_primary.items():
+                primary = session.get(Track, primary_id)
+                if primary is None:
+                    continue
+                typer.echo(f"{primary.title or '?'} — {primary.artist or 'unknown artist'}")
+                typer.echo(f"  uses:  {primary.path}")
+                for alt in alts:
+                    typer.echo(f"  copy:  {alt.path}")
+    finally:
+        engine.dispose()
+    if not alternates:
+        typer.echo("No duplicate files found.")
+    else:
+        typer.echo(
+            f"{len(by_primary)} songs, {len(alternates)} extra copies (hidden from the catalog)"
+        )
 
 
 @models_app.command("pull")

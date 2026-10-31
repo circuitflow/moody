@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import numpy.typing as npt
@@ -18,6 +19,7 @@ from moody import __version__
 from moody.analysis.analyzer import MOOD_TAGS
 from moody.analysis.models import EFFNET, pipeline_version
 from moody.api.schemas import (
+    Alternate,
     Features2007Out,
     MapValues,
     Meta,
@@ -37,6 +39,8 @@ from moody.store.models import Analysis, Embedding, Track
 SCALAR_FIELDS = ("bpm", "loudness")
 MAP_FIELDS = (*SCALAR_FIELDS, *(f"tag:{t}" for t in sorted(MOOD_TAGS)))
 NEIGHBOR_MODEL = EFFNET
+# Copies of another track (moody.ingest.duplicates) are hidden from the catalog.
+PRIMARY = Track.duplicate_of.is_(None)
 
 
 def summary(track: Track) -> TrackSummary:
@@ -56,13 +60,20 @@ def summary(track: Track) -> TrackSummary:
 
 
 def meta(session: Session, *, audio: bool) -> Meta:
-    tracks = session.scalar(select(func.count()).select_from(Track)) or 0
-    analyzed = session.scalar(select(func.count()).select_from(Analysis)) or 0
+    tracks = session.scalar(select(func.count()).select_from(Track).where(PRIMARY)) or 0
+    analyzed = (
+        session.scalar(
+            select(func.count()).select_from(Analysis).join(Analysis.track).where(PRIMARY)
+        )
+        or 0
+    )
+    hidden = session.scalar(select(func.count()).select_from(Track).where(~PRIMARY)) or 0
     return Meta(
         version=__version__,
         pipeline_version=pipeline_version(),
         tracks=tracks,
         analyzed=analyzed,
+        duplicates=hidden,
         mood_tags=sorted(MOOD_TAGS),
         octants=[OctantInfo(name=o.label, angle_deg=o.angle_deg) for o in Octant],
         map_fields=list(MAP_FIELDS),
@@ -79,7 +90,7 @@ def track_page(
     cursor: int | None = None,
     limit: int = 100,
 ) -> TrackPage:
-    query = select(Track).options(selectinload(Track.analysis)).order_by(Track.id)
+    query = select(Track).options(selectinload(Track.analysis)).where(PRIMARY).order_by(Track.id)
     if cursor is not None:
         query = query.where(Track.id > cursor)
     if q:
@@ -106,7 +117,17 @@ def track_detail(session: Session, track_id: int) -> TrackDetail | None:
     )
     if track is None:
         return None
-    detail = TrackDetail(**summary(track).model_dump(), error=track.error)
+    detail = TrackDetail(
+        **summary(track).model_dump(),
+        error=track.error,
+        duplicate_of=track.duplicate_of,
+        alternates=[
+            Alternate(id=alt.id, format=Path(alt.path).suffix.lstrip(".").upper() or "?")
+            for alt in session.scalars(
+                select(Track).where(Track.duplicate_of == track.id).order_by(Track.id)
+            )
+        ],
+    )
     a = track.analysis
     if a is None:
         return detail
@@ -137,6 +158,7 @@ def mood_map(session: Session) -> MoodMap:
             Track.artist,
         )
         .join(Track.analysis)
+        .where(PRIMARY)
         .order_by(Track.id)
     ).all()
     return MoodMap(
@@ -156,7 +178,7 @@ def map_values(session: Session, field: str) -> MapValues:
     """Values of ``field`` (see ``MAP_FIELDS``) in ``mood_map`` order. Raises ``ValueError``."""
     if field not in MAP_FIELDS:
         raise ValueError(f"unknown field {field!r}; expected one of {', '.join(MAP_FIELDS)}")
-    base = select(Track.id).join(Track.analysis).order_by(Track.id)
+    base = select(Track.id).join(Track.analysis).where(PRIMARY).order_by(Track.id)
     values: list[float | None]
     if field == "bpm":
         values = [v for v in session.scalars(base.with_only_columns(Analysis.bpm))]
@@ -179,13 +201,15 @@ class EmbeddingIndex:
     @staticmethod
     def signature_of(session: Session) -> tuple[int, datetime | None]:
         row = session.execute(select(func.count(), func.max(Analysis.analyzed_at))).one()
-        return int(row[0]), row[1]
+        hidden = session.scalar(select(func.count()).select_from(Track).where(~PRIMARY)) or 0
+        return int(row[0]) * 1_000_003 + hidden, row[1]
 
     @classmethod
     def build(cls, session: Session, model: str = NEIGHBOR_MODEL) -> EmbeddingIndex:
         rows = session.execute(
             select(Embedding.track_id, Embedding.vector)
-            .where(Embedding.model == model)
+            .join(Track, Track.id == Embedding.track_id)
+            .where(Embedding.model == model, PRIMARY)
             .order_by(Embedding.track_id)
         ).all()
         if not rows:

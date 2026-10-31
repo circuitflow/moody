@@ -35,6 +35,11 @@ class Track(Base):
     status: Mapped[str] = mapped_column(String(16), default="pending", index=True)
     error: Mapped[str | None] = mapped_column(Text)
     added_at: Mapped[datetime] = mapped_column(default=utcnow)
+    # Set when this file is another copy (e.g. MP3 of a WAV) of the track with this id. Such
+    # alternates stay in the database but are hidden from the catalog; files are never touched.
+    duplicate_of: Mapped[int | None] = mapped_column(
+        ForeignKey("tracks.id", ondelete="SET NULL"), index=True
+    )
 
     analysis: Mapped[Analysis | None] = relationship(
         back_populates="track", cascade="all, delete-orphan", uselist=False

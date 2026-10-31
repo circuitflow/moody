@@ -4,6 +4,7 @@ import { renderApp } from "./test/render";
 test("shell shows library counts from meta", async () => {
   renderApp("/");
   expect(await screen.findByText(/4 of 4 tracks analyzed/)).toBeInTheDocument();
+  expect(screen.getByText(/1 duplicate files hidden/)).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Map" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "List" })).toBeInTheDocument();
 });

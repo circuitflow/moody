@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from moody.analysis import models
 from moody.analysis.analyzer import Analyzer, TrackAnalysis
 from moody.ingest import IngestReport, ingest
+from moody.ingest.duplicates import DedupeReport, apply_duplicates
 from moody.store.db import to_blob
 from moody.store.models import Analysis, Embedding, Job, Segment, Track, utcnow
 
@@ -39,15 +40,20 @@ class ScanResult:
     failed: int = 0
     cancelled: bool = False
     errors: dict[str, str] = field(default_factory=dict)
+    dedupe: DedupeReport | None = None
 
 
 def tracks_to_analyze(
     session: Session, root: Path, version: str, reanalyze: bool = False
 ) -> list[tuple[int, str]]:
-    """(id, path) of tracks under ``root`` with no analysis or a stale one. Failed tracks are
-    retried only with ``reanalyze``."""
+    """(id, path) of tracks under ``root`` with no analysis or a stale one, skipping copies of
+    other tracks. Failed tracks are retried only with ``reanalyze``."""
     prefix = str(root.resolve()).rstrip(os.sep) + os.sep
-    query = select(Track.id, Track.path).where(Track.path.startswith(prefix, autoescape=True))
+    query = (
+        select(Track.id, Track.path)
+        .where(Track.path.startswith(prefix, autoescape=True))
+        .where(Track.duplicate_of.is_(None))  # copies of another track are not analyzed
+    )
     if not reanalyze:
         stale = Track.analysis.has(Analysis.pipeline_version != version)
         query = query.where(Track.status != "failed").where(or_(~Track.analysis.has(), stale))
@@ -151,6 +157,9 @@ def run_scan(
     version = models.pipeline_version()
     with sessions() as session:
         report = ingest(root, session, limit=limit)
+        # Before analysis: same-folder, same-name copies (e.g. song.wav + song.mp3) are hidden
+        # now, so only one of them gets analyzed.
+        apply_duplicates(session)
         todo = tracks_to_analyze(session, root, version, reanalyze)
         if limit is not None:
             todo = todo[:limit]
@@ -187,6 +196,8 @@ def run_scan(
                 if progress:
                     progress(result.analyzed + result.failed + len(buffer), len(todo))
             flush()
+            # After analysis: copies in different folders are confirmed by their embeddings.
+            result.dedupe = apply_duplicates(session)
             job.status = "completed"
         except KeyboardInterrupt:
             flush()

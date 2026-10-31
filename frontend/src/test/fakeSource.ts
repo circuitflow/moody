@@ -45,6 +45,8 @@ export function fakeDetail(t: FakeTrack): TrackDetail {
       features: { mode: 60, harmony: 80, tempo: 55, rhythm: 70, loudness: 52 },
     },
     pipeline_version: "test", error: null,
+    duplicate_of: null,
+    alternates: t.id === 1 ? [{ id: 99, format: "MP3" }] : [],
   };
 }
 
@@ -54,6 +56,7 @@ export class FakeSource implements DataSource {
   async meta(): Promise<Meta> {
     return {
       version: "test", pipeline_version: "p1", tracks: this.tracks.length, analyzed: this.tracks.length,
+      duplicates: 1,
       mood_tags: ["calm", "dark", "energetic", "happy", "heavy", "melancholic", "relaxing", "sad"],
       octants: OCTANTS.map((name, i) => ({ name, angle_deg: i * 45 })),
       map_fields: ["bpm", "loudness", "tag:happy"], audio: true,
