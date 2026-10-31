@@ -129,6 +129,23 @@ def scan(
         raise typer.Exit(130)
 
 
+@app.command("export-static")
+def export_static_cmd(
+    out: Annotated[Path, typer.Argument(help="Output folder, e.g. ../frontend/public/data")],
+    k: Annotated[int, typer.Option(help="Neighbors per track.")] = 10,
+) -> None:
+    """Export the analyzed library as static JSON for the frontend's static mode."""
+    from moody.export import export_static
+    from moody.store import init_db, session_factory
+
+    engine = init_db(get_settings().database_url)
+    try:
+        report = export_static(session_factory(engine), out, k=k)
+    finally:
+        engine.dispose()
+    typer.echo(f"exported {report.tracks} tracks ({report.files} files) to {out}")
+
+
 @models_app.command("pull")
 def models_pull(
     models_dir: ModelsDir = None,
