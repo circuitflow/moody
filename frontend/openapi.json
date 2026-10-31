@@ -835,6 +835,139 @@
           }
         }
       }
+    },
+    "/api/history/mood": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Mood",
+        "description": "Mean mood of what you played, per week or per hour of the day, in your time zone.",
+        "operationId": "mood_api_history_mood_get",
+        "parameters": [
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(week|hour)$",
+              "default": "week",
+              "title": "Bucket"
+            }
+          },
+          {
+            "name": "tz",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "IANA time zone for weeks and hours",
+              "default": "UTC",
+              "title": "Tz"
+            },
+            "description": "IANA time zone for weeks and hours"
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(all|year|quarter)$",
+              "description": "all, year or quarter",
+              "default": "all",
+              "title": "Period"
+            },
+            "description": "all, year or quarter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryMood"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/top": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Top",
+        "description": "Your most-played library tracks.",
+        "operationId": "top_api_history_top_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(all|year|quarter)$",
+              "description": "all, year or quarter",
+              "default": "all",
+              "title": "Period"
+            },
+            "description": "all, year or quarter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TopTrack"
+                  },
+                  "title": "Response Top Api History Top Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -993,6 +1126,32 @@
           "matched"
         ],
         "title": "HistoryImport"
+      },
+      "HistoryMood": {
+        "properties": {
+          "bucket": {
+            "type": "string",
+            "title": "Bucket"
+          },
+          "tz": {
+            "type": "string",
+            "title": "Tz"
+          },
+          "points": {
+            "items": {
+              "$ref": "#/components/schemas/MoodBucket"
+            },
+            "type": "array",
+            "title": "Points"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bucket",
+          "tz",
+          "points"
+        ],
+        "title": "HistoryMood"
       },
       "HistorySource": {
         "properties": {
@@ -1204,6 +1363,57 @@
           "audio"
         ],
         "title": "Meta"
+      },
+      "MoodBucket": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key",
+            "description": "Week start date (YYYY-MM-DD, Monday) or hour of day (0-23)"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays",
+            "description": "All plays in the bucket"
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched",
+            "description": "Plays of analyzed library tracks"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence",
+            "description": "Mean over matched plays (a track counts per play)"
+          },
+          "arousal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arousal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "plays",
+          "matched",
+          "valence",
+          "arousal"
+        ],
+        "title": "MoodBucket"
       },
       "MoodMap": {
         "properties": {
@@ -1762,6 +1972,119 @@
           "connected"
         ],
         "title": "SpotifyStatus"
+      },
+      "TopTrack": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "artist": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Artist"
+          },
+          "album": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Album"
+          },
+          "duration_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration S"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "valence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valence"
+          },
+          "arousal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arousal"
+          },
+          "octant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Octant",
+            "description": "Russell octant of (valence, arousal)"
+          },
+          "top_tags": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Top Tags",
+            "default": []
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "artist",
+          "album",
+          "duration_s",
+          "status",
+          "plays"
+        ],
+        "title": "TopTrack"
       },
       "TrackDetail": {
         "properties": {

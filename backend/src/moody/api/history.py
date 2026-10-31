@@ -2,15 +2,23 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 import httpx2
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from moody.api.deps import SessionDep
+from moody.api.queries import summary
 from moody.api.schemas import (
     HistoryImport,
+    HistoryMood,
     HistorySource,
     HistorySummary,
     LastfmImportRequest,
+    MoodBucket,
+    TopTrack,
 )
 from moody.api.spotify import HttpDep, SettingsDep
 from moody.store.models import OAuthToken
@@ -90,3 +98,50 @@ def import_spotify(session: SessionDep, settings: SettingsDep, http: HttpDep) ->
     except httpx2.HTTPError as exc:
         raise HTTPException(502, f"Spotify unreachable: {exc}") from exc
     return _result(report, session, settings)
+
+
+PERIODS = {"all": None, "year": 365, "quarter": 91}
+Period = Annotated[str, Query(pattern="^(all|year|quarter)$", description="all, year or quarter")]
+
+
+def _since(period: str) -> datetime | None:
+    days = PERIODS[period]
+    return None if days is None else datetime.now(UTC) - timedelta(days=days)
+
+
+@router.get("/mood", response_model=HistoryMood)
+def mood(
+    session: SessionDep,
+    bucket: Annotated[str, Query(pattern="^(week|hour)$")] = "week",
+    tz: Annotated[str, Query(description="IANA time zone for weeks and hours")] = "UTC",
+    period: Period = "all",
+) -> HistoryMood:
+    """Mean mood of what you played, per week or per hour of the day, in your time zone."""
+    try:
+        zone = ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError) as exc:
+        raise HTTPException(422, f"unknown time zone {tz!r}") from exc
+    buckets = history.mood_buckets(session, bucket, zone, _since(period))
+    return HistoryMood(
+        bucket=bucket,
+        tz=tz,
+        points=[
+            MoodBucket(
+                key=b.key, plays=b.plays, matched=b.matched, valence=b.valence, arousal=b.arousal
+            )
+            for b in buckets
+        ],
+    )
+
+
+@router.get("/top", response_model=list[TopTrack])
+def top(
+    session: SessionDep,
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    period: Period = "all",
+) -> list[TopTrack]:
+    """Your most-played library tracks."""
+    return [
+        TopTrack(**summary(track).model_dump(), plays=n)
+        for track, n in history.top_tracks(session, limit, _since(period))
+    ]

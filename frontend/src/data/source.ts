@@ -5,6 +5,9 @@
  */
 import type {
   Embeddings,
+  HistoryImport,
+  HistoryMood,
+  HistorySummary,
   MapValues,
   Meta,
   MoodMap,
@@ -14,8 +17,11 @@ import type {
   PlaylistSummary,
   SpotifyExport,
   SpotifyStatus,
+  TopTrack,
   TrackDetail,
 } from "../api/types";
+
+export type Period = "all" | "year" | "quarter";
 
 export interface DataSource {
   readonly kind: "api" | "static";
@@ -41,6 +47,12 @@ export interface DataSource {
   spotifyLoginUrl(returnTo: string): string | null;
   spotifyDisconnect(): Promise<void>;
   exportToSpotify(playlistId: number): Promise<SpotifyExport>;
+  historySummary(): Promise<HistorySummary>;
+  /** Imports up to 2,000 new scrobbles; call again while `more` is true. */
+  importLastfm(user?: string): Promise<HistoryImport>;
+  importSpotifyRecent(): Promise<HistoryImport>;
+  historyMood(bucket: "week" | "hour", tz: string, period: Period): Promise<HistoryMood>;
+  historyTop(period: Period): Promise<TopTrack[]>;
 }
 
 const NOT_IN_DEMO = "Saved playlists need the self-hosted app.";
@@ -123,6 +135,23 @@ export class ApiDataSource implements DataSource {
     const resp = await send("POST", `${this.baseUrl}/api/playlists/${playlistId}/export/spotify`);
     return (await resp.json()) as SpotifyExport;
   }
+  historySummary() {
+    return getJson<HistorySummary>(`${this.baseUrl}/api/history`);
+  }
+  async importLastfm(user?: string) {
+    const resp = await send("POST", `${this.baseUrl}/api/history/lastfm`, user ? { user } : {});
+    return (await resp.json()) as HistoryImport;
+  }
+  async importSpotifyRecent() {
+    return (await (await send("POST", `${this.baseUrl}/api/history/spotify`)).json()) as HistoryImport;
+  }
+  historyMood(bucket: "week" | "hour", tz: string, period: Period) {
+    const q = new URLSearchParams({ bucket, tz, period });
+    return getJson<HistoryMood>(`${this.baseUrl}/api/history/mood?${q}`);
+  }
+  historyTop(period: Period) {
+    return getJson<TopTrack[]>(`${this.baseUrl}/api/history/top?period=${period}`);
+  }
 }
 
 export class StaticDataSource implements DataSource {
@@ -176,6 +205,21 @@ export class StaticDataSource implements DataSource {
   }
   exportToSpotify(): Promise<SpotifyExport> {
     return Promise.reject(new Error(NOT_IN_DEMO));
+  }
+  async historySummary(): Promise<HistorySummary> {
+    return { plays: 0, matched: 0, sources: [], lastfm_configured: false, lastfm_user: null, spotify_connected: false };
+  }
+  importLastfm(): Promise<HistoryImport> {
+    return Promise.reject(new Error(NOT_IN_DEMO));
+  }
+  importSpotifyRecent(): Promise<HistoryImport> {
+    return Promise.reject(new Error(NOT_IN_DEMO));
+  }
+  async historyMood(bucket: "week" | "hour", tz: string): Promise<HistoryMood> {
+    return { bucket, tz, points: [] };
+  }
+  async historyTop(): Promise<TopTrack[]> {
+    return [];
   }
 }
 

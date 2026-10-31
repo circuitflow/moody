@@ -14,14 +14,15 @@ import zipfile
 from collections import defaultdict
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass, field
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
-from moody.store.models import ExternalId, Play, Track
+from moody.store.models import Analysis, ExternalId, Play, Track
 from moody.streaming.match import core_artist, core_title
 
 SAME_PLAY_S = 30
@@ -308,3 +309,82 @@ def import_records(
                 yield rec
 
     return ingest(session, plays(), report)
+
+
+# Mood over time ---------------------------------------------------------------------------
+
+
+@dataclass
+class Bucket:
+    key: str
+    plays: int = 0
+    matched: int = 0
+    valence_sum: float = 0.0
+    arousal_sum: float = 0.0
+
+    @property
+    def valence(self) -> float | None:
+        return round(self.valence_sum / self.matched, 4) if self.matched else None
+
+    @property
+    def arousal(self) -> float | None:
+        return round(self.arousal_sum / self.matched, 4) if self.matched else None
+
+
+def mood_buckets(
+    session: Session, bucket: str, tz: ZoneInfo, since: datetime | None = None
+) -> list[Bucket]:
+    """Plays-weighted mean valence/arousal per local week (every week from the first play to
+    the last, empty ones included) or per local hour of day (all 24)."""
+    query = (
+        select(Play.played_at, Analysis.valence, Analysis.arousal)
+        .outerjoin(Analysis, Analysis.track_id == Play.track_id)
+        .order_by(Play.played_at)
+    )
+    if since is not None:
+        query = query.where(Play.played_at >= since.astimezone(UTC).replace(tzinfo=None))
+    rows = session.execute(query).all()
+    if bucket == "hour":
+        buckets = {str(h): Bucket(str(h)) for h in range(24)}
+    else:
+        buckets = {}
+        if rows:
+            first = _week_start(as_utc(rows[0][0]).astimezone(tz))
+            last = _week_start(as_utc(rows[-1][0]).astimezone(tz))
+            day = first
+            while day <= last:
+                buckets[day.isoformat()] = Bucket(day.isoformat())
+                day += timedelta(days=7)
+    for played_at, valence, arousal in rows:
+        local = as_utc(played_at).astimezone(tz)
+        key = str(local.hour) if bucket == "hour" else _week_start(local).isoformat()
+        b = buckets[key]
+        b.plays += 1
+        if valence is not None and arousal is not None:
+            b.matched += 1
+            b.valence_sum += valence
+            b.arousal_sum += arousal
+    return list(buckets.values())
+
+
+def _week_start(local: datetime) -> date:
+    d = local.date()
+    return d - timedelta(days=d.weekday())
+
+
+def top_tracks(
+    session: Session, limit: int = 10, since: datetime | None = None
+) -> list[tuple[Track, int]]:
+    """Most-played library tracks (matched plays only)."""
+    n = func.count(Play.id).label("n")
+    query = (
+        select(Track, n)
+        .join(Play, Play.track_id == Track.id)
+        .group_by(Track.id)
+        .order_by(n.desc(), Track.id)
+        .limit(limit)
+        .options(selectinload(Track.analysis))
+    )
+    if since is not None:
+        query = query.where(Play.played_at >= since.astimezone(UTC).replace(tzinfo=None))
+    return [(track, int(count)) for track, count in session.execute(query)]

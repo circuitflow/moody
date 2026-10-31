@@ -340,6 +340,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/history/mood": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Mood
+         * @description Mean mood of what you played, per week or per hour of the day, in your time zone.
+         */
+        get: operations["mood_api_history_mood_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/history/top": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Top
+         * @description Your most-played library tracks.
+         */
+        get: operations["top_api_history_top_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -416,6 +456,15 @@ export interface components {
             plays: number;
             /** Matched */
             matched: number;
+        };
+        /** HistoryMood */
+        HistoryMood: {
+            /** Bucket */
+            bucket: string;
+            /** Tz */
+            tz: string;
+            /** Points */
+            points: components["schemas"]["MoodBucket"][];
         };
         /** HistorySource */
         HistorySource: {
@@ -499,6 +548,31 @@ export interface components {
              * @description Whether /api/audio serves local files
              */
             audio: boolean;
+        };
+        /** MoodBucket */
+        MoodBucket: {
+            /**
+             * Key
+             * @description Week start date (YYYY-MM-DD, Monday) or hour of day (0-23)
+             */
+            key: string;
+            /**
+             * Plays
+             * @description All plays in the bucket
+             */
+            plays: number;
+            /**
+             * Matched
+             * @description Plays of analyzed library tracks
+             */
+            matched: number;
+            /**
+             * Valence
+             * @description Mean over matched plays (a track counts per play)
+             */
+            valence: number | null;
+            /** Arousal */
+            arousal: number | null;
         };
         /**
          * MoodMap
@@ -693,6 +767,37 @@ export interface components {
              * @description Why the last sign-in failed (shown once)
              */
             error?: string | null;
+        };
+        /** TopTrack */
+        TopTrack: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string | null;
+            /** Artist */
+            artist: string | null;
+            /** Album */
+            album: string | null;
+            /** Duration S */
+            duration_s: number | null;
+            /** Status */
+            status: string;
+            /** Valence */
+            valence?: number | null;
+            /** Arousal */
+            arousal?: number | null;
+            /**
+             * Octant
+             * @description Russell octant of (valence, arousal)
+             */
+            octant?: string | null;
+            /**
+             * Top Tags
+             * @default []
+             */
+            top_tags: string[];
+            /** Plays */
+            plays: number;
         };
         /** TrackDetail */
         TrackDetail: {
@@ -1421,6 +1526,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HistoryImport"];
+                };
+            };
+        };
+    };
+    mood_api_history_mood_get: {
+        parameters: {
+            query?: {
+                bucket?: string;
+                /** @description IANA time zone for weeks and hours */
+                tz?: string;
+                /** @description all, year or quarter */
+                period?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryMood"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    top_api_history_top_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                /** @description all, year or quarter */
+                period?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TopTrack"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

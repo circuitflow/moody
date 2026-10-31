@@ -221,3 +221,21 @@ class HistoryImport(BaseModel):
     more: bool = Field(description="Stopped at the per-request page limit; call again to go on")
     plays: int
     matched: int
+
+
+class MoodBucket(BaseModel):
+    key: str = Field(description="Week start date (YYYY-MM-DD, Monday) or hour of day (0-23)")
+    plays: int = Field(description="All plays in the bucket")
+    matched: int = Field(description="Plays of analyzed library tracks")
+    valence: float | None = Field(description="Mean over matched plays (a track counts per play)")
+    arousal: float | None
+
+
+class HistoryMood(BaseModel):
+    bucket: str
+    tz: str
+    points: list[MoodBucket]
+
+
+class TopTrack(TrackSummary):
+    plays: int

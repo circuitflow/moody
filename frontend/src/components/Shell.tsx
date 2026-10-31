@@ -15,6 +15,7 @@ export function Shell() {
           <Link to="/list">List</Link>
           <Link to="/path">Path</Link>
           {source.canSave && <Link to="/playlists">Playlists</Link>}
+          {source.canSave && <Link to="/history">History</Link>}
         </nav>
         <span className="spacer" />
         <ThemeToggle />

@@ -167,3 +167,98 @@ def test_cli_history(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         assert missing.exit_code == 2 and "MOODY_LASTFM_API_KEY" in missing.output
     finally:
         get_settings.cache_clear()
+
+
+def seed_plays(sessions: sessionmaker[Session], plays: list[tuple[datetime, str]]) -> None:
+    from moody.streaming import history
+    from moody.streaming.history import PlayRecord
+
+    with sessions() as s:
+        history.import_records(
+            s,
+            "lastfm",
+            [
+                PlayRecord(source="lastfm", played_at=t, title=title, artist="Weather")
+                for t, title in plays
+            ],
+        )
+
+
+def test_mood_by_week_and_hour_in_local_time(
+    client: TestClient, sessions: sessionmaker[Session]
+) -> None:
+    rain = client.get("/api/map").json()
+    v, a = rain["valence"][0], rain["arousal"][0]
+    seed_plays(
+        sessions,
+        [
+            # Sunday 2025-10-26 23:30 UTC is Monday 00:30 in Stockholm (UTC+1 after DST ends).
+            (datetime(2025, 10, 26, 23, 30, tzinfo=UTC), "Rain Song"),
+            (datetime(2025, 10, 27, 9, 0, tzinfo=UTC), "Rain Song"),
+            (datetime(2025, 10, 28, 9, 0, tzinfo=UTC), "Not In Library"),
+            # two weeks later, leaving an empty week between
+            (datetime(2025, 11, 12, 18, 0, tzinfo=UTC), "Rain Song"),
+        ],
+    )
+    weeks = client.get(
+        "/api/history/mood", params={"bucket": "week", "tz": "Europe/Stockholm"}
+    ).json()
+    assert weeks["tz"] == "Europe/Stockholm"
+    points = {p["key"]: p for p in weeks["points"]}
+    assert list(points) == ["2025-10-27", "2025-11-03", "2025-11-10"]
+    assert points["2025-10-27"] == {
+        "key": "2025-10-27",
+        "plays": 3,
+        "matched": 2,
+        "valence": v,
+        "arousal": a,
+    }
+    assert points["2025-11-03"] == {
+        "key": "2025-11-03",
+        "plays": 0,
+        "matched": 0,
+        "valence": None,
+        "arousal": None,
+    }
+    utc_weeks = client.get("/api/history/mood", params={"bucket": "week"}).json()["points"]
+    assert utc_weeks[0]["key"] == "2025-10-20"  # in UTC the first play is still on Sunday
+
+    hours = client.get(
+        "/api/history/mood", params={"bucket": "hour", "tz": "Europe/Stockholm"}
+    ).json()["points"]
+    assert [p["key"] for p in hours] == [str(h) for h in range(24)]
+    assert hours[0]["matched"] == 1  # 00:30 local
+    assert hours[10]["plays"] == 2 and hours[10]["matched"] == 1  # 09:00 UTC = 10:00 local
+    assert hours[19]["matched"] == 1  # 18:00 UTC in November = 19:00 local
+    assert client.get("/api/history/mood", params={"tz": "Mars/Olympus"}).status_code == 422
+    assert client.get("/api/history/mood", params={"bucket": "day"}).status_code == 422
+
+
+def test_period_and_top_tracks(client: TestClient, sessions: sessionmaker[Session]) -> None:
+    now = datetime.now(UTC)
+    from datetime import timedelta
+
+    seed_plays(
+        sessions,
+        [
+            (now - timedelta(days=400), "Rain Song"),
+            (now - timedelta(days=10), "Rain Song"),
+            (now - timedelta(days=9), "Rain Song"),
+            (now - timedelta(days=8), "Elsewhere"),
+        ],
+    )
+    all_time = client.get("/api/history/mood", params={"bucket": "hour"}).json()["points"]
+    recent = client.get("/api/history/mood", params={"bucket": "hour", "period": "quarter"}).json()[
+        "points"
+    ]
+    assert sum(p["plays"] for p in all_time) == 4 and sum(p["plays"] for p in recent) == 3
+    top = client.get("/api/history/top").json()
+    assert [(t["title"], t["plays"]) for t in top] == [("Rain Song", 3)]
+    assert client.get("/api/history/top", params={"period": "quarter"}).json()[0]["plays"] == 2
+    assert client.get("/api/history/mood").json()["points"] != []
+    assert client.get("/api/history/top", params={"period": "decade"}).status_code == 422
+
+
+def test_mood_of_an_empty_history(client: TestClient) -> None:
+    assert client.get("/api/history/mood").json()["points"] == []
+    assert client.get("/api/history/top").json() == []

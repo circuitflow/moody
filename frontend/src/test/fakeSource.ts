@@ -1,6 +1,10 @@
 /** A small deterministic in-memory library for component tests. */
 import type {
   Embeddings,
+  HistoryImport,
+  HistoryMood,
+  HistorySummary,
+  MoodBucket,
   MapValues,
   Meta,
   MoodMap,
@@ -10,6 +14,7 @@ import type {
   PlaylistSummary,
   SpotifyExport,
   SpotifyStatus,
+  TopTrack,
   TrackDetail,
 } from "../api/types";
 import { encodeEmbeddings } from "../features/path/embeddings";
@@ -157,6 +162,35 @@ export class FakeSource implements DataSource {
   }
   async spotifyDisconnect(): Promise<void> {
     this.spotify = { ...this.spotify, connected: false, account: null };
+  }
+  // Listening history, simulated: `lastfmRuns` are returned one per import call.
+  history: HistorySummary = {
+    plays: 0, matched: 0, sources: [], lastfm_configured: true, lastfm_user: "owen", spotify_connected: false,
+  };
+  lastfmRuns: HistoryImport[] = [];
+  lastfmCalls = 0;
+  mood: Record<"week" | "hour", MoodBucket[]> = { week: [], hour: [] };
+  top: TopTrack[] = [];
+  moodRequests: string[] = [];
+  async historySummary(): Promise<HistorySummary> {
+    return this.history;
+  }
+  async importLastfm(): Promise<HistoryImport> {
+    this.lastfmCalls++;
+    const run = this.lastfmRuns.shift();
+    if (!run) throw new Error("Last.fm: User not found");
+    this.history = { ...this.history, plays: run.plays, matched: run.matched };
+    return run;
+  }
+  async importSpotifyRecent(): Promise<HistoryImport> {
+    return { source: "spotify", new: 3, duplicates: 1, skipped: 0, more: false, plays: this.history.plays + 3, matched: this.history.matched };
+  }
+  async historyMood(bucket: "week" | "hour", tz: string, period: string): Promise<HistoryMood> {
+    this.moodRequests.push(`${bucket} ${tz} ${period}`);
+    return { bucket, tz, points: this.mood[bucket] };
+  }
+  async historyTop(): Promise<TopTrack[]> {
+    return this.top;
   }
   async exportToSpotify(playlistId: number): Promise<SpotifyExport> {
     if (!this.spotify.connected) throw new Error("Spotify is not connected");

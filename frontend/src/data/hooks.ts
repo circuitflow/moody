@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PlaylistCreate } from "../api/types";
+import type { Period } from "./source";
 import { decodeEmbeddings } from "../features/path/embeddings";
 import { useDataSource } from "./context";
 
@@ -103,5 +104,30 @@ export function useSpotifyExport() {
     mutationFn: (playlistId: number) => source.exportToSpotify(playlistId),
     // A rejected sign-in disconnects on the server; refresh the status either way.
     onSettled: () => void client.invalidateQueries({ queryKey: ["spotify"] }),
+  });
+}
+
+export function useHistorySummary() {
+  const source = useDataSource();
+  return useQuery({ queryKey: ["history"], queryFn: () => source.historySummary(), enabled: source.canSave });
+}
+
+export function useHistoryMood(bucket: "week" | "hour", tz: string, period: Period) {
+  const source = useDataSource();
+  return useQuery({
+    queryKey: ["history", "mood", bucket, tz, period],
+    queryFn: () => source.historyMood(bucket, tz, period),
+    enabled: source.canSave,
+    placeholderData: (previous) => previous,
+  });
+}
+
+export function useHistoryTop(period: Period) {
+  const source = useDataSource();
+  return useQuery({
+    queryKey: ["history", "top", period],
+    queryFn: () => source.historyTop(period),
+    enabled: source.canSave,
+    placeholderData: (previous) => previous,
   });
 }
