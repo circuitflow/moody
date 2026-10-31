@@ -11,9 +11,11 @@ It is a 2026 rewrite of a 2007 thesis project of the same name. The original Moo
 features from a folder of MP3s. This version uses pretrained deep audio embeddings (Essentia's
 Discogs-EffNet and MSD-MusiCNN), a web UI, and streaming-service integration.
 
-> **Status:** M2 done: analysis core plus an explore UI (mood map, track pages, list). See the
+> **Status:** M3 done: analysis core, an explore UI (mood map, track pages, list), mood-path
+> playlists (M3U and Spotify export) and listening history from Last.fm and Spotify. See the
 > [design spec](docs/superpowers/specs/2026-09-28-moody-rewrite-design.md) and the plans for
-> [M0–M1](docs/superpowers/plans/2026-09-28-moody-m0-m1.md) and [M2](docs/superpowers/plans/2026-10-31-moody-m2.md).
+> [M0–M1](docs/superpowers/plans/2026-09-28-moody-m0-m1.md), [M2](docs/superpowers/plans/2026-10-31-moody-m2.md)
+> and [M3](docs/superpowers/plans/2026-10-31-moody-m3.md).
 
 ## Quick start (self-hosted)
 
@@ -27,12 +29,35 @@ uv run moody scan ~/Music --workers 4    # incremental; rerun any time
 uv run moody serve --ui ../frontend/dist # open http://127.0.0.1:8000
 ```
 
+### Playlists and listening history
+
+- **Mood paths** (`#/path`): drag a start and an end mood on the map and get an ordered playlist
+  between them. Save it, then download it as M3U (Apple Music: File → Library → Import Playlist).
+- **Spotify export:** create an app at [developer.spotify.com](https://developer.spotify.com/dashboard)
+  with the redirect URI `http://127.0.0.1:8000/api/auth/spotify/callback`. Then put
+  `MOODY_SPOTIFY_CLIENT_ID=<client id>` in `backend/.env`. No secret is needed (PKCE). Spotify's
+  Development Mode requires the app owner to have Premium and allows 5 users.
+- **Listening history:** Moody only knows the mood of music it has analyzed, so plays are matched
+  to your library and each import reports how many matched.
+
+```bash
+# Last.fm: a free API key from https://www.last.fm/api/account/create
+echo 'MOODY_LASTFM_API_KEY=<key>' >> .env
+uv run moody history lastfm <your user>          # incremental; --full re-reads everything
+# Spotify: request "Extended streaming history" under Account → Privacy, then
+uv run moody history spotify-export ~/Downloads/my_spotify_data.zip
+uv run moody history status                      # coverage per source; re-matches after scans
+```
+
 ## How it works
 
 ```
 audio ─▶ Discogs-EffNet embeddings ─▶ mood classifiers · 56 mood/theme tags · similarity
      ├─▶ MSD-MusiCNN embeddings  ─▶ valence/arousal regression (DEAM) ─▶ per-segment mood trajectory
      └─▶ DSP: tempo, key, loudness
+
+mood map + style vectors ─▶ in-browser beam search ─▶ mood-path playlist ─▶ M3U · Spotify
+Last.fm / Spotify plays ─▶ matched to analyzed tracks ─▶ mood by week and hour of day
 ```
 
 Why not Spotify's audio features? Since late 2024 Spotify no longer offers audio features, audio analysis
@@ -61,10 +86,13 @@ npm test && npm run lint && npm run typecheck
 ### Self-hosting with Docker
 
 ```bash
-MOODY_LIBRARY=~/Music docker compose up --build   # then open http://localhost:8080
+MOODY_LIBRARY=~/Music docker compose up --build   # then open http://127.0.0.1:8080
 ```
 
-Your library is mounted read-only.
+Your library is mounted read-only. For Spotify in Docker, use the redirect URI
+`http://127.0.0.1:8080/api/auth/spotify/callback`. Pass `MOODY_SPOTIFY_CLIENT_ID`,
+`MOODY_LASTFM_API_KEY` and `MOODY_LASTFM_USER` through the environment or a `.env` file next to
+`docker-compose.yml`.
 
 ## Credits
 

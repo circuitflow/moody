@@ -37,9 +37,9 @@ Moody began as a 2007 Python thesis project that estimated the mood of songs in 
 | Library scan | `moody scan ~/Music` indexes and analyzes files; incremental and resumable | M1 |
 | Mood map | Zoomable V/A scatter of the whole library; color by tag, filter by artist or tag, lasso selection | M2 |
 | Track view | Mood trajectory over time, tag probabilities, DSP descriptors, nearest neighbors | M2 |
-| Mood-path playlists | Pick start and end points on the map, choose a length, get an ordered and smooth playlist | M3 |
-| Spotify export | Match tracks via ISRC/search and create the playlist on the user's account | M3 |
-| Listening mood over time | Spotify recently-played + Last.fm scrobble import joined to the library; heatmap by week or hour | M3 |
+| Mood-path playlists | Drag start and end points (and an optional bend) on the map, choose a length, get an ordered and smooth playlist; save it, download M3U, share as a link | M3 ✅ |
+| Spotify export | Match tracks via ISRC/search and create the playlist on the user's account | M3 ✅ |
+| Listening mood over time | Last.fm scrobbles, Spotify recently played and Spotify data downloads joined to the library; mood by week and by hour of day | M3 ✅ |
 | Public demo | Static build over a precomputed Jamendo subset | M4 |
 | Custom V/A head (stretch) | Small MLP on EffNet embeddings trained on DEAM/PMEmo, evaluated against the pretrained head | M5 |
 | Text-to-mood search (stretch) | CLAP text embeddings, e.g. "rainy Sunday morning" | M5 |
@@ -49,18 +49,18 @@ Moody began as a 2007 Python thesis project that estimated the mood of songs in 
 
 ```
 ┌──────────────────────── frontend (React + TS + Vite) ────────────────────────┐
-│  MoodMap (visx/D3) · TrackView · PathBuilder · History                         │
+│  MoodMap (D3) · TrackView · PathBuilder + planner (TS) · Playlists · History   │
 │  DataSource interface ─┬─ ApiDataSource  (self-host: talks to FastAPI)         │
 │                        └─ StaticDataSource (demo: reads exported JSON bundle)  │
 └───────────────────────────────────────┬──────────────────────────────────────┘
                                         │ REST (OpenAPI → generated TS client)
 ┌──────────────────────── backend (FastAPI, Python 3.13) ──────────────────────┐
-│ api/        routers: tracks, map, playlists, history, jobs, auth/spotify       │
-│ jobs/       in-process worker + queue table; progress over SSE                 │
+│ api/        routers: tracks, map, embeddings, playlists, history, auth/spotify │
+│ jobs/       scan (CLI); an in-process queue with SSE progress comes in M4      │
 │ ingest/     file walker, mutagen tags, content hash, Chromaprint (optional)    │
 │ analysis/   Essentia pipeline: decode → EffNet embeddings → heads → DSP        │
-│ mood/       V/A normalization, tag vocabulary, path planner, neighbors         │
-│ streaming/  Spotify (PKCE OAuth), Last.fm import, track matcher                │
+│ mood/       V/A normalization, tag vocabulary, neighbors, style vectors (PCA)  │
+│ streaming/  Spotify (PKCE OAuth, export, recent), Last.fm, history, matcher    │
 │ store/      SQLAlchemy 2.x models + SQLite (WAL); embeddings as float32 blobs  │
 │ export/     static demo bundle writer                                          │
 └──────────────────────────────────────────────────────────────────────────────┘
@@ -112,52 +112,75 @@ Two embedding extractors are needed. Essentia's pretrained valence/arousal heads
 - `analyses`: track_id (PK/FK), pipeline_version, valence, arousal, bpm, key, scale, loudness_lufs, mood_probs (JSON), tag_probs (JSON), top_tags (text), features_2007 (JSON), octant_2007, hevner_2007, analyzed_at
 - `segments`: track_id, idx, start_s, valence, arousal (PK track_id + idx)
 - `embeddings`: track_id, model (`discogs-effnet` | `msd-musicnn`), dim, vector (BLOB float32, mean-pooled)
-- `jobs`: id, kind, status, progress, total, error, created_at, finished_at
-- `plays`: id, provider, played_at, external_id, artist, title, isrc, track_id (nullable FK after matching)
-- `external_ids`: track_id, provider, external_id (e.g. Spotify track URI)
-- `playlists` and `playlist_items`: id, name, start/end V/A, params (JSON); position, track_id
-- `oauth_tokens`: provider, access/refresh token (stored locally in plaintext; the file lives in the user's data dir, documented)
+- `jobs`: id, kind, status, progress, total, error, created_at, finished_at (used from M4)
+- `plays`: id, source (`lastfm` | `spotify` | `spotify-export`), played_at (UTC, start of the listen), artist, title, album, ms_played, external_id (Spotify URI), mbid, track_id (nullable FK, set when matched to a primary track)
+- `external_ids`: track_id, provider, external_id (e.g. Spotify URI), matched_by (`isrc` | `search`), matched_at; a cache so re-exports only search the misses
+- `playlists`: id, name, start/end/via V/A, params (JSON: the path builder's URL state and filters), created_at; `playlist_items`: playlist_id, position, track_id
+- `oauth_tokens`: provider, access/refresh token, expires_at, scope, account (stored locally in plaintext; the file lives in the user's data dir, documented)
 
 Migrations use Alembic from M1 onward. On SQLite, foreign keys are switched off while migrating and checked before commit: rebuilding `tracks` in batch mode would otherwise cascade-delete every analysis.
 
 ## 8. Mood-path playlist algorithm
 
+Implemented in TypeScript (`frontend/src/features/path/planner.ts`) and run in the browser:
+- paths re-plan while a handle is dragged
+- the static demo gets playlists without a backend
+
 Input:
-- start point p₀ and end point p₁ in V/A space
-- length N
-- optional filters (tags, artists, BPM range)
-- smoothness weight λ
+- the map's V/A, artists and the active filters
+- a 32-dim style vector per track (`/api/embeddings`): Discogs-EffNet embeddings, centered, projected on their top principal components and L2-normalized
+- start p₀, end p₁, an optional via point, length N, smoothness s ∈ [0, 1]
 
-1. Place N waypoints wᵢ along the segment p₀→p₁. An optional curve through an intermediate point can be picked on the map.
-2. Run a beam search (width B = 32) to choose tracks t₁…t_N, distinct and with no artist repeated within k = 3 positions, minimizing
-   `Σ ‖va(tᵢ) − wᵢ‖² + λ · Σ (1 − cos(emb(tᵢ₋₁), emb(tᵢ)))`.
-   The first term keeps the path on the mood trajectory; the second makes consecutive tracks sound compatible.
-3. Candidates for each waypoint are the M = 200 nearest tracks in V/A space (a KD-tree over 2D points), so the search stays cheap.
+Steps:
+1. Place N waypoints wᵢ evenly by arc length along p₀→p₁. With a via point, the path is a quadratic curve through it at the halfway point.
+2. Candidates for each waypoint are its M = 200 nearest eligible tracks, found by brute force with a bounded heap.
+3. Run a beam search (width B = 32) to choose distinct tracks t₁…t_N, with no artist repeated within k = 3 positions, minimizing
+   `Σ ‖va(tᵢ) − wᵢ‖² + λ · Σ (1 − cos(style(tᵢ₋₁), style(tᵢ)))`.
+   - λ = s · (2Δ)², where Δ is the waypoint spacing (floored at 0.05). At s = 1, a complete change of sound costs as much as two spacings off the path.
+   - Equal costs keep the earlier candidate, so results are deterministic.
+4. If a step has no valid candidate, widen to all eligible tracks, then drop the artist rule and report it (`relaxed`). The playlist is always min(N, eligible) long.
 
-The planner is a pure function over arrays, which makes it property-testable: it returns a valid length, distinct tracks, and a monotone approach to p₁ when data is dense.
+Property tests (fast-check):
+- length, distinctness, eligibility, determinism and the artist gap
+- the exact optimum against brute force on small libraries
+- a steady approach to p₁ on a dense grid
 
 ## 9. Streaming integration
 
-- **Spotify:**
-  - Authorization Code with PKCE, using a loopback redirect `http://127.0.0.1:8000/api/auth/spotify/callback`.
+- **Spotify (rules as of Feb/Mar 2026):**
+  - Development Mode apps need the owner on Premium and allow 5 users.
+  - Playlists are created with `POST /me/playlists` and filled with `POST /playlists/{id}/items`.
+  - Search `limit` is at most 10; `external_ids` (ISRC) was restored in March 2026.
+  - Sign-in uses Authorization Code with PKCE (no secret) and a loopback redirect `http://127.0.0.1:8000/api/auth/spotify/callback` (`MOODY_SPOTIFY_REDIRECT_URI` to change it).
   - Scopes: `user-read-recently-played user-top-read playlist-modify-private playlist-modify-public`.
-  - Matching order: (1) ISRC from file tags → `search?q=isrc:`; (2) normalized artist + title search with duration within ±3 s; (3) otherwise unmatched and flagged in the UI.
-- **Last.fm:** import full history with `user.getRecentTracks`, paginated, using an API key only. It is joined to the library by MusicBrainz ID, then by normalized artist/title.
-- Recently-played is capped at 50 per call, so a background job polls it periodically while the app runs. Last.fm is the path for deep history.
+  - Tokens refresh before expiry and once on a 401; a revoked refresh token disconnects. 429s wait out `Retry-After`.
+  - After sign-in, the browser returns only to this server's origin or a configured UI origin.
+  - Matching: (1) ISRC from file tags → `search?q=isrc:`; (2) core title (version notes stripped) + main artist with duration within ±3 s, in Spotify's relevance order; (3) otherwise unmatched and listed in the UI. Hits are cached in `external_ids`.
+  - Recently played returns the last 50 only. Its `played_at` is the end of the listen, so the track length is subtracted to line up with Last.fm's start times.
+- **Spotify data download:** the extended streaming history (`Streaming_History_Audio_*.json`, the whole account) and the basic one (`StreamingHistory_music_*.json`, the last year). Imported from the zip, folder or file with `moody history spotify-export`. Podcasts and listens under 30 s are skipped.
+- **Last.fm:** `user.getRecentTracks` with an API key only, 200 per page, ≤ 5 requests/s.
+  - Pages are read oldest first within a fixed `to` time, so a run stopped at a page limit resumes with no gap. The API does 10 pages per call and says `more`.
+  - Plays are matched by MusicBrainz ID, then Spotify URI, then core artist + title.
+- **De-duplication:** the same artist + title within 30 s counts once, whatever the source.
+- **Apple Music:** playlists go out as M3U (File → Library → Import Playlist). The privacy export's Play Activity CSV is not imported yet: its columns have changed over the years and need a real sample.
 
 ## 10. API surface (v1)
 
-Implemented (M1–M2):
+Implemented (M1–M3):
 - `GET /api/health`
 - `GET /api/meta`: counts (including hidden duplicate files), pipeline version, the 30-tag mood vocabulary, octants, `map_fields`
 - `GET /api/tracks?q=&tag=&status=&limit=&cursor=`, `GET /api/tracks/{id}` (with `duplicate_of` and `alternates`, the hidden copies), `GET /api/tracks/{id}/neighbors?k=` (cosine over EffNet embeddings)
 - `GET /api/map`: columnar id, valence, arousal, 2026 octant, top tag(s), 2007 octant, title, artist
 - `GET /api/map/values?field=bpm|loudness|tag:<mood>`: one value per map point, for color-by
+- `GET /api/embeddings`: 32-dim style vectors aligned with `/api/map`, base64 float32
 - `GET /api/audio/{id}`: the local file with HTTP Range; only paths stored in the library
+- `GET|POST /api/playlists`, `GET|DELETE /api/playlists/{id}`, `GET /api/playlists/{id}/m3u`, `POST /api/playlists/{id}/export/spotify`
+- `GET|DELETE /api/auth/spotify`, `GET /api/auth/spotify/login?return_to=`, `GET /api/auth/spotify/callback`
+- `GET /api/history`, `POST /api/history/lastfm`, `POST /api/history/spotify`, `GET /api/history/mood?bucket=week|hour&tz=&period=all|year|quarter`, `GET /api/history/top?period=`
 
-Planned (M3): `POST /api/scan` · `GET /api/jobs/{id}` · `GET /api/jobs/{id}/events` (SSE) · `POST /api/playlists/path` · `POST /api/playlists/{id}/export/spotify` · `GET /api/history/mood?bucket=week|hour` · `GET /api/auth/spotify/login` · `GET /api/auth/spotify/callback` · `POST /api/history/lastfm/import`
+Planned (M4): `POST /api/scan` · `GET /api/jobs/{id}` · `GET /api/jobs/{id}/events` (SSE)
 
-The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend types are generated from it with `openapi-typescript` (`npm run gen:api`). CI fails if either is stale. `moody export-static` writes the same payloads as JSON files for the static demo (`meta.json`, `map.json`, `map-values/`, `tracks/`, `neighbors/`), using the same query functions as the API (`moody.api.queries`).
+The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend types are generated from it with `openapi-typescript` (`npm run gen:api`). CI fails if either is stale. `moody export-static` writes the same payloads as JSON files for the static demo (`meta.json`, `map.json`, `embeddings.json`, `map-values/`, `tracks/`, `neighbors/`), using the same query functions as the API (`moody.api.queries`).
 
 ## 11. Frontend
 
@@ -180,6 +203,16 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
   - a 2007-vs-2026 card showing the thesis features against the tree's thresholds
   - similar tracks
 - **List view:** a sortable, keyboard-navigable table with the same filters; it is the accessible alternative to the canvas.
+- **Path builder** (`#/path`):
+  - Start, End and an optional Via handle on the mood map, draggable or moved with the arrow keys; octant pickers, length and smoothness
+  - the dashed mood line and the numbered route; the ordered list with Play all
+  - state lives in the URL, so a path is a shareable link
+  - self-hosted: Save
+- **Playlists** (`#/playlists`, self-hosted): M3U download, reopen in the builder, Spotify connect/export, delete.
+- **History** (`#/history`, self-hosted):
+  - coverage tiles and the import buttons
+  - mood by week and by hour of day in the browser's time zone: two lines (valence, arousal) on one axis zoomed around 0, broken at buckets without matched plays, a legend plus end labels, a crosshair readout and a table
+  - most played
 - **Theming:** tokens from the dataviz reference palette, light and dark, with a toggle that overrides the OS setting both ways.
 - **Self-hosting:** `moody serve --ui frontend/dist` serves the built app next to the API.
 - **Demo mode:** `VITE_DATA_SOURCE=static` builds against `data/*.json` from `moody export-static`. Audio previews from Jamendo's CC-licensed URLs come in M4.
@@ -223,7 +256,7 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
 |---|---|
 | The pretrained DEAM head generalizes poorly. Measured: V and A collapse onto one intensity axis (+0.80 vs +0.55 for humans), and predicted valence carries a loudness bias that listeners don't share (§12) | Report the metrics honestly; train a custom head on EffNet embeddings (DEAM + PMEmo) against the §12 success criteria |
 | essentia-tensorflow wheel/Python version drift | Pin the exact version, test in CI, keep the Docker image as the reference environment |
-| Spotify API policy changes further | Spotify is isolated behind a `StreamingProvider` interface; Last.fm, and potentially ListenBrainz, are alternatives |
+| Spotify API policy changes further (Feb 2026: Premium owner, 5 users, fewer endpoints) | Spotify code is isolated in `streaming/spotify.py` and only used for export and recent plays; Last.fm and Spotify's data download need no Spotify app at all |
 | Jamendo audio availability or licensing for the demo | Store attribution; the bundle build is reproducible; the demo keeps working without audio previews |
 | Large libraries: slow first scan | Incremental, resumable jobs with progress over SSE; `--limit` and path filters |
 
@@ -236,8 +269,8 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
   - models pull and lock, ingest, analysis pipeline, SQLite + Alembic
   - `moody scan`, golden-file tests
 - **M2 (explore UI) ✅ (2026-10-31):** map and track APIs, the mood map, the track view, the list view, static export, end-to-end tests (`docs/superpowers/plans/2026-10-31-moody-m2.md`).
-- **M3 (streaming + playlists):** path planner, Spotify OAuth, matching and export, Last.fm import, history heatmap.
-- **M4 (showcase):** demo bundle, Pages deploy, eval report, README with GIFs.
+- **M3 (playlists + listening history) ✅ (2026-10-31):** in-browser path planner and builder, saved playlists + M3U, Spotify sign-in and export, Last.fm / Spotify history import, the History page (`docs/superpowers/plans/2026-10-31-moody-m3.md`).
+- **M4 (showcase):** demo bundle, Pages deploy, eval report, README with GIFs; scan from the UI with jobs and SSE progress.
 - **M5 (stretch):** CLAP text search, lyrics fusion, a custom V/A head on EffNet embeddings.
 
 ## 16. Resolved decisions

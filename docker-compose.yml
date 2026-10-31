@@ -1,6 +1,8 @@
 # Self-hosted Moody. Point MOODY_LIBRARY at your music folder, then:
 #   MOODY_LIBRARY=~/Music docker compose up --build
-# and open http://localhost:8080
+# and open http://127.0.0.1:8080 (Spotify sign-in needs 127.0.0.1, not localhost).
+# Optional: MOODY_SPOTIFY_CLIENT_ID (redirect URI http://127.0.0.1:8080/api/auth/spotify/callback),
+# MOODY_LASTFM_API_KEY and MOODY_LASTFM_USER, from the environment or a .env file next to this one.
 services:
   backend:
     build: ./backend
@@ -10,6 +12,11 @@ services:
       - moody-models:/models
     ports:
       - "127.0.0.1:8000:8000"
+    environment:
+      MOODY_SPOTIFY_CLIENT_ID: ${MOODY_SPOTIFY_CLIENT_ID:-}
+      MOODY_SPOTIFY_REDIRECT_URI: ${MOODY_SPOTIFY_REDIRECT_URI:-http://127.0.0.1:8080/api/auth/spotify/callback}
+      MOODY_LASTFM_API_KEY: ${MOODY_LASTFM_API_KEY:-}
+      MOODY_LASTFM_USER: ${MOODY_LASTFM_USER:-}
   frontend:
     build: ./frontend
     depends_on: [backend]

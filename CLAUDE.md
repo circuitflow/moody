@@ -15,6 +15,9 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Static bundle: `uv run moody export-static <dir>` (same JSON shapes as the API).
 - Duplicate files (e.g. WAV + MP3 of one recording): `uv run moody duplicates` lists them; `scan` recomputes the groups (`ingest/duplicates.py`).
 - Browser tests (in `frontend/`): `npm run e2e:data` (deterministic fixture into `public/data`), then `npm run e2e`.
+- Listening history: `uv run moody history lastfm <user> | spotify-export <zip> | spotify | status`.
+- Spotify/Last.fm need `MOODY_SPOTIFY_CLIENT_ID` / `MOODY_LASTFM_API_KEY` (e.g. in `backend/.env`, gitignored).
+- Local Playwright reuses a server already on :4173. If e2e runs an old build, stop that `vite preview` by its exact PID.
 
 ## Conventions
 - mypy `--strict` and ruff must pass; tests must pass with `-W error`.
@@ -24,3 +27,9 @@ The design spec lives in `docs/superpowers/specs/`, implementation plans in `doc
 - Catalog queries filter `queries.PRIMARY` (`Track.duplicate_of IS NULL`) so hidden copies never reach the UI.
 - Migrations: SQLite batch mode rebuilds the table. `env.py` turns foreign keys off while migrating, so the rebuild can't cascade-delete child rows. Still prefer in-place `ALTER TABLE` where SQLite supports it.
 - Essentia models: V/A heads take **MSD-MusiCNN** embeddings; mood/tag heads take **Discogs-EffNet** embeddings.
+- The mood-path planner is TypeScript (`frontend/src/features/path/planner.ts`) so it runs in the static demo;
+  the backend only serves style vectors (`/api/embeddings`) and stores playlists.
+- Features the static demo can't have (saving, Spotify, history) check `DataSource.canSave`.
+- Outbound HTTP (Spotify, Last.fm) goes through the app's `httpx2.Client` (`app.state.http`). Tests pass a
+  `MockTransport` fake (`tests/fake_spotify.py`, `tests/fake_lastfm.py`); CI never calls real services.
+- Spotify Web API (2026): `POST /me/playlists`, `POST /playlists/{id}/items`, search `limit` ≤ 10.
