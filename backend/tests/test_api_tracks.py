@@ -95,7 +95,10 @@ def test_meta(client: TestClient) -> None:
 
 def test_map_has_tags_aligned_with_ids(client: TestClient) -> None:
     data = client.get("/api/map").json()
-    assert len(data["tags"]) == len(data["id"]) == 5
+    assert len(data["tags"]) == len(data["id"]) == len(data["octant_2007"]) == 5
+    octants = {"Pleasure", "Excitement", "Arousal", "Distress"}
+    octants |= {"Displeasure", "Depression", "Sleepiness", "Relaxation"}
+    assert set(data["octant_2007"]) <= octants
     assert all(t.split()[0] == first for t, first in zip(data["tags"], data["tag"], strict=True))
 
 

@@ -64,7 +64,7 @@ export class FakeSource implements DataSource {
     return {
       id: t.map((x) => x.id), valence: t.map((x) => x.valence), arousal: t.map((x) => x.arousal),
       octant: t.map((x) => octantOf(x.valence, x.arousal)), tag: t.map((x) => x.tags[0] ?? null),
-      tags: t.map((x) => x.tags.join(" ")), title: t.map((x) => x.title), artist: t.map((x) => x.artist),
+      tags: t.map((x) => x.tags.join(" ")), octant_2007: t.map((x) => x.octant2007), title: t.map((x) => x.title), artist: t.map((x) => x.artist),
     };
   }
   async mapValues(field: string): Promise<MapValues> {

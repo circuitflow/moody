@@ -228,6 +228,11 @@ export interface components {
              * @description Space-separated top mood tags, most probable first
              */
             tags: string[];
+            /**
+             * Octant 2007
+             * @description Octant from the 2007 thesis model
+             */
+            octant_2007: (string | null)[];
             /** Title */
             title: (string | null)[];
             /** Artist */

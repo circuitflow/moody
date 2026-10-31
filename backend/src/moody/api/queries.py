@@ -132,6 +132,7 @@ def mood_map(session: Session) -> MoodMap:
             Analysis.valence,
             Analysis.arousal,
             Analysis.top_tags,
+            Analysis.octant_2007,
             Track.title,
             Track.artist,
         )
@@ -145,6 +146,7 @@ def mood_map(session: Session) -> MoodMap:
         octant=[octant_of(r.valence, r.arousal).label for r in rows],
         tag=[r.top_tags.split()[0] if r.top_tags else None for r in rows],
         tags=[r.top_tags or "" for r in rows],
+        octant_2007=[r.octant_2007 for r in rows],
         title=[r.title for r in rows],
         artist=[r.artist for r in rows],
     )

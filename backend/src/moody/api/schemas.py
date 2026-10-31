@@ -65,6 +65,7 @@ class MoodMap(BaseModel):
     octant: list[str]
     tag: list[str | None]
     tags: list[str] = Field(description="Space-separated top mood tags, most probable first")
+    octant_2007: list[str | None] = Field(description="Octant from the 2007 thesis model")
     title: list[str | None]
     artist: list[str | None]
 
