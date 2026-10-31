@@ -1,0 +1,197 @@
+{
+  "dataset": "DEAM static song-level annotations (1-9), 45 s clips",
+  "sample": {
+    "n": 400,
+    "seed": 0
+  },
+  "pipeline_version": "7f7c297be088",
+  "essentia": "2.1-beta6-dev",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+  "seconds": 1756,
+  "heads": {
+    "deam-msd-musicnn-2": {
+      "n": 400,
+      "pearson": {
+        "col0_vs_valence": 0.8237302344289754,
+        "col0_vs_arousal": 0.6386165869229582,
+        "col1_vs_valence": 0.6567244161381101,
+        "col1_vs_arousal": 0.8401008719414312
+      },
+      "contrast_r": 0.6102189505517923,
+      "ccc": {
+        "col0_vs_valence": 0.7847548306706862,
+        "col1_vs_arousal": 0.7823633538182556
+      },
+      "outputs_corr": 0.7955025213573409,
+      "annotations_corr": 0.547956726952999,
+      "verdict": "as_labelled"
+    },
+    "emomusic-msd-musicnn-2": {
+      "n": 400,
+      "pearson": {
+        "col0_vs_valence": 0.6020155443508877,
+        "col0_vs_arousal": 0.6142857393628273,
+        "col1_vs_valence": 0.730372282014797,
+        "col1_vs_arousal": 0.6891082450653008
+      },
+      "contrast_r": -0.03058264902572046,
+      "ccc": {
+        "col0_vs_valence": 0.534307383905432,
+        "col1_vs_arousal": 0.6458482962027804
+      },
+      "outputs_corr": 0.6311270705574308,
+      "annotations_corr": 0.547956726952999,
+      "verdict": "undetermined"
+    }
+  },
+  "production": {
+    "n": 400,
+    "pearson": {
+      "col0_vs_valence": 0.8237602614900211,
+      "col0_vs_arousal": 0.6386365554493333,
+      "col1_vs_valence": 0.656724412044297,
+      "col1_vs_arousal": 0.8401008659726884
+    },
+    "contrast_r": 0.6103357744506727,
+    "ccc": {
+      "col0_vs_valence": 0.01601011538628663,
+      "col1_vs_arousal": 0.01887102512582646
+    },
+    "outputs_corr": 0.7955683496621312,
+    "annotations_corr": 0.547956726952999,
+    "verdict": "as_labelled"
+  },
+  "production_vs_reimplementation_gap": 0.00011682389888034717,
+  "confounds": {
+    "happy": {
+      "model_v": 0.562708887819868,
+      "model_a": 0.5947118231971701,
+      "model_v_minus_a": -0.08692740356738123,
+      "human_v": 0.5285988854918534,
+      "human_a": 0.4879753913073807,
+      "human_v_minus_a": -0.015578460922699591
+    },
+    "sad": {
+      "model_v": -0.6565100696256734,
+      "model_a": -0.6081315108178238,
+      "model_v_minus_a": -0.035126502491951254,
+      "human_v": -0.5185876145582199,
+      "human_a": -0.5109378158518967,
+      "human_v_minus_a": 0.050821455012024
+    },
+    "aggressive": {
+      "model_v": 0.43027241652884773,
+      "model_a": 0.3386162915062108,
+      "model_v_minus_a": 0.1185194976085826,
+      "human_v": 0.2908712437923518,
+      "human_a": 0.3479780447304312,
+      "human_v_minus_a": -0.0962585526960276
+    },
+    "relaxed": {
+      "model_v": -0.6949726489232871,
+      "model_a": -0.6630427413106132,
+      "model_v_minus_a": -0.006467025248312958,
+      "human_v": -0.566631960670461,
+      "human_a": -0.5906961296452544,
+      "human_v_minus_a": 0.09130879556201459
+    },
+    "party": {
+      "model_v": 0.619068006563258,
+      "model_a": 0.5759917900932426,
+      "model_v_minus_a": 0.02907187177064035,
+      "human_v": 0.5175594601136309,
+      "human_a": 0.5220836134082468,
+      "human_v_minus_a": -0.06413813307028846
+    },
+    "bpm": {
+      "model_v": 0.10108096028273882,
+      "model_a": 0.0928925889426412,
+      "model_v_minus_a": 0.006586597194568388,
+      "human_v": 0.06953207895252632,
+      "human_a": 0.06636662179685984,
+      "human_v_minus_a": -0.004452846947999017
+    },
+    "loudness": {
+      "model_v": 0.526392316481691,
+      "model_a": 0.39020194727116564,
+      "model_v_minus_a": 0.18332129747286247,
+      "human_v": 0.4424405319682661,
+      "human_a": 0.41494038483922796,
+      "human_v_minus_a": -0.020214306279591084
+    }
+  },
+  "octants": {
+    "all": {
+      "2026_head": {
+        "n": 400,
+        "exact": 0.4775,
+        "within_one": 0.8775,
+        "mean_angle_error_deg": 33.2
+      },
+      "2007_tree": {
+        "n": 400,
+        "exact": 0.1175,
+        "within_one": 0.3975,
+        "mean_angle_error_deg": 90.0
+      },
+      "chance_exact": 0.245,
+      "rated_octants": {
+        "Pleasure": 37,
+        "Excitement": 76,
+        "Arousal": 41,
+        "Distress": 26,
+        "Displeasure": 43,
+        "Depression": 98,
+        "Sleepiness": 54,
+        "Relaxation": 25
+      },
+      "predicted_octants_2007": {
+        "Pleasure": 18,
+        "Excitement": 50,
+        "Arousal": 127,
+        "Distress": 102,
+        "Displeasure": 21,
+        "Depression": 72,
+        "Sleepiness": 3,
+        "Relaxation": 7
+      }
+    },
+    "clear": {
+      "2026_head": {
+        "n": 289,
+        "exact": 0.5294,
+        "within_one": 0.9273,
+        "mean_angle_error_deg": 25.7
+      },
+      "2007_tree": {
+        "n": 289,
+        "exact": 0.1003,
+        "within_one": 0.4083,
+        "mean_angle_error_deg": 89.1
+      },
+      "chance_exact": 0.2837,
+      "rated_octants": {
+        "Pleasure": 22,
+        "Excitement": 53,
+        "Arousal": 26,
+        "Distress": 14,
+        "Displeasure": 34,
+        "Depression": 82,
+        "Sleepiness": 45,
+        "Relaxation": 13
+      },
+      "predicted_octants_2007": {
+        "Pleasure": 13,
+        "Excitement": 40,
+        "Arousal": 90,
+        "Distress": 85,
+        "Displeasure": 11,
+        "Depression": 44,
+        "Sleepiness": 1,
+        "Relaxation": 5
+      }
+    },
+    "clear_radius": 0.25,
+    "note": "Octants around the neutral point of each scale (DEAM 5 on 1-9; Moody 0 on -1..1). The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic. The 2007 tree never saw DEAM, and runs on its five features re-derived with Essentia (the original CLAM and Echo Nest tools are gone); those mappings are not yet calibrated against the thesis songs, so this measures the port as much as the 2007 model."
+  }
+}
