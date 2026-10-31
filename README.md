@@ -11,8 +11,21 @@ It is a 2026 rewrite of a 2007 thesis project of the same name. The original Moo
 features from a folder of MP3s. This version uses pretrained deep audio embeddings (Essentia's
 Discogs-EffNet and MSD-MusiCNN), a web UI, and streaming-service integration.
 
-> **Status:** early development (M0: scaffold). See the [design spec](docs/superpowers/specs/2026-09-28-moody-rewrite-design.md)
-> and the [M0–M1 plan](docs/superpowers/plans/2026-09-28-moody-m0-m1.md).
+> **Status:** M2 done: analysis core plus an explore UI (mood map, track pages, list). See the
+> [design spec](docs/superpowers/specs/2026-09-28-moody-rewrite-design.md) and the plans for
+> [M0–M1](docs/superpowers/plans/2026-09-28-moody-m0-m1.md) and [M2](docs/superpowers/plans/2026-10-31-moody-m2.md).
+
+## Quick start (self-hosted)
+
+```bash
+git clone https://github.com/circuitflow/moody.git && cd moody
+(cd frontend && npm ci && npm run build)
+cd backend
+uv sync --extra analysis                 # Python 3.13; essentia-tensorflow on Linux x86_64 / macOS
+uv run moody models pull                 # ~300 MB of pretrained models, checksum-verified
+uv run moody scan ~/Music --workers 4    # incremental; rerun any time
+uv run moody serve --ui ../frontend/dist # open http://127.0.0.1:8000
+```
 
 ## How it works
 

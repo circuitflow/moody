@@ -143,16 +143,42 @@ The planner is a pure function over arrays, which makes it property-testable: it
 
 ## 10. API surface (v1)
 
-`GET /api/health` · `GET /api/tracks?q=&tag=&limit=&cursor=` · `GET /api/tracks/{id}` · `GET /api/tracks/{id}/neighbors` · `GET /api/map` (compact arrays: id, v, a, top tag) · `POST /api/scan` · `GET /api/jobs/{id}` · `GET /api/jobs/{id}/events` (SSE) · `POST /api/playlists/path` · `POST /api/playlists/{id}/export/spotify` · `GET /api/history/mood?bucket=week|hour` · `GET /api/auth/spotify/login` · `GET /api/auth/spotify/callback` · `POST /api/history/lastfm/import` · `GET /api/audio/{id}` (range requests, local files only)
+Implemented (M1–M2):
+- `GET /api/health`
+- `GET /api/meta`: counts, pipeline version, the 30-tag mood vocabulary, octants, `map_fields`
+- `GET /api/tracks?q=&tag=&status=&limit=&cursor=`, `GET /api/tracks/{id}`, `GET /api/tracks/{id}/neighbors?k=` (cosine over EffNet embeddings)
+- `GET /api/map`: columnar id, valence, arousal, 2026 octant, top tag(s), 2007 octant, title, artist
+- `GET /api/map/values?field=bpm|loudness|tag:<mood>`: one value per map point, for color-by
+- `GET /api/audio/{id}`: the local file with HTTP Range; only paths stored in the library
 
-The OpenAPI schema is exported in CI, and the frontend client is generated from it with `openapi-typescript`.
+Planned (M3): `POST /api/scan` · `GET /api/jobs/{id}` · `GET /api/jobs/{id}/events` (SSE) · `POST /api/playlists/path` · `POST /api/playlists/{id}/export/spotify` · `GET /api/history/mood?bucket=week|hour` · `GET /api/auth/spotify/login` · `GET /api/auth/spotify/callback` · `POST /api/history/lastfm/import`
+
+The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend types are generated from it with `openapi-typescript` (`npm run gen:api`). CI fails if either is stale. `moody export-static` writes the same payloads as JSON files for the static demo (`meta.json`, `map.json`, `map-values/`, `tracks/`, `neighbors/`), using the same query functions as the API (`moody.api.queries`).
 
 ## 11. Frontend
 
-- React 19, TypeScript (strict), Vite, TanStack Query and TanStack Router, plus visx (D3 underneath) for charts.
-- **Mood map:** canvas rendering for more than 10k points, an SVG overlay for axes, labels and selection, and a quadtree for hover picking. Quadrant labels: tense/angry, happy/excited, sad/depressed, calm/relaxed.
-- **Theming:** light/dark, accessible palette, keyboard navigation for track lists.
-- **Demo mode:** `VITE_DATA_SOURCE=static` builds against `/data/*.json` from the demo bundle. Audio previews stream from Jamendo's CC-licensed URLs.
+- React 19, TypeScript (strict), Vite, TanStack Query, TanStack Router with hash history (deep links work on GitHub Pages), d3 modules (scale, quadtree, zoom, selection, polygon). Plain SVG is enough for the charts, so visx was dropped.
+- **One `DataSource` interface** with API and static implementations, so the self-hosted app and the Pages demo share all UI code.
+- **Mood map:**
+  - canvas points (8 px, 2 px surface ring) with an SVG overlay for the thesis's 8 octant wedges and labels, the axes and the lasso
+  - d3-zoom pan/zoom with equal px per unit, so angles stay true; "fit data" by default, because predicted V/A are compressed, or "full circumplex"
+  - nearest-point hover through a quadtree (24 px pick radius); click opens the track; shift-drag lasso selects
+- **Color follows the dataviz rules, validated with the skill's script in both modes:**
+  - one series by default
+  - a 5-step ordinal blue ramp for BPM, loudness or a mood tag's probability (light end ≥ 2:1 on the surface)
+  - 3 categorical slots (blue/aqua/orange) for "2007 vs 2026 octant": same, adjacent, or 2+ apart
+  - points are never colored by octant: position already encodes it, and a scatter only supports 3 distinguishable categories
+- **Honest labelling:** the map carries a note on the measured valence bias (§12), linked to the evaluation.
+- **Track page:**
+  - V/A trajectory with a crosshair readout and a playhead synced to the audio (click to seek)
+  - mini circumplex with the path through the song
+  - mood classifier and mood-tag bars, and audio facts
+  - a 2007-vs-2026 card showing the thesis features against the tree's thresholds
+  - similar tracks
+- **List view:** a sortable, keyboard-navigable table with the same filters; it is the accessible alternative to the canvas.
+- **Theming:** tokens from the dataviz reference palette, light and dark, with a toggle that overrides the OS setting both ways.
+- **Self-hosting:** `moody serve --ui frontend/dist` serves the built app next to the API.
+- **Demo mode:** `VITE_DATA_SOURCE=static` builds against `data/*.json` from `moody export-static`. Audio previews from Jamendo's CC-licensed URLs come in M4.
 
 ## 12. Demo, deployment and evaluation
 
@@ -199,13 +225,13 @@ The OpenAPI schema is exported in CI, and the frontend client is generated from 
 
 ## 15. Milestones
 
-- **M0 (scaffold):**
+- **M0 (scaffold) ✅ (2026-09-28):**
   - monorepo, backend FastAPI `/api/health` + Typer CLI, frontend Vite app calling health
   - CI, Docker Compose, this spec and the M0–M1 plan
-- **M1 (analysis core):**
+- **M1 (analysis core) ✅ (2026-10-29):**
   - models pull and lock, ingest, analysis pipeline, SQLite + Alembic
   - `moody scan`, golden-file tests
-- **M2 (explore UI):** map and track APIs, the mood map, the track view.
+- **M2 (explore UI) ✅ (2026-10-31):** map and track APIs, the mood map, the track view, the list view, static export, end-to-end tests (`docs/superpowers/plans/2026-10-31-moody-m2.md`).
 - **M3 (streaming + playlists):** path planner, Spotify OAuth, matching and export, Last.fm import, history heatmap.
 - **M4 (showcase):** demo bundle, Pages deploy, eval report, README with GIFs.
 - **M5 (stretch):** CLAP text search, lyrics fusion, a custom V/A head on EffNet embeddings.
