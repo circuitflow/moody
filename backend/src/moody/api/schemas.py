@@ -79,6 +79,20 @@ class MoodMap(BaseModel):
     artist: list[str | None]
 
 
+class Embeddings(BaseModel):
+    """Compact per-track style vectors for the in-browser path planner, aligned with ``MoodMap.id``.
+
+    Discogs-EffNet embeddings, centered and projected onto their top principal components, then
+    L2-normalized, so a dot product is a cosine similarity. Tracks without an embedding get zeros.
+    """
+
+    id: list[int]
+    dims: int
+    vectors: str = Field(
+        description="Base64 of little-endian float32, row-major: len(id) rows of `dims` values"
+    )
+
+
 class MapValues(BaseModel):
     """One numeric field per map point, aligned with ``MoodMap.id``, for color-by."""
 

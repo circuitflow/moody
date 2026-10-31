@@ -12,7 +12,15 @@ from fastapi.responses import FileResponse
 
 from moody.api import queries
 from moody.api.deps import SessionDep
-from moody.api.schemas import MapValues, Meta, MoodMap, Neighbor, TrackDetail, TrackPage
+from moody.api.schemas import (
+    Embeddings,
+    MapValues,
+    Meta,
+    MoodMap,
+    Neighbor,
+    TrackDetail,
+    TrackPage,
+)
 from moody.store.models import Track
 
 router = APIRouter(prefix="/api", tags=["library"])
@@ -53,6 +61,19 @@ def get_neighbors(
 ) -> list[Neighbor]:
     if session.get(Track, track_id) is None:
         raise HTTPException(404, "track not found")
+    return queries.neighbors(session, _embedding_index(request, session), track_id, k)
+
+
+@router.get("/embeddings", response_model=Embeddings)
+def embeddings(request: Request, session: SessionDep) -> Embeddings:
+    """Compact style vectors for the path planner, aligned with ``/api/map``."""
+    index = _embedding_index(request, session)
+    with _index_lock:  # the reduction is computed once per index, under the same lock
+        return queries.embeddings(session, index)
+
+
+def _embedding_index(request: Request, session: SessionDep) -> queries.EmbeddingIndex:
+    """The cached index, rebuilt when the library's analyses change."""
     state = request.app.state
     signature = queries.EmbeddingIndex.signature_of(session)
     with _index_lock:
@@ -60,7 +81,7 @@ def get_neighbors(
         if index is None or index.signature != signature:
             index = queries.EmbeddingIndex.build(session)
             state.embedding_index = index
-    return queries.neighbors(session, index, track_id, k)
+    return index
 
 
 @router.get("/map", response_model=MoodMap)

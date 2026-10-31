@@ -1,12 +1,15 @@
+import base64
 from collections.abc import Iterator
 from pathlib import Path
 
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from moody.analysis.analyzer import FakeAnalyzer
+from moody.api import queries
 from moody.api.app import create_app
 from moody.jobs.scan import run_scan
 from moody.legacy.thesis2007 import octant_of
@@ -152,3 +155,48 @@ def test_audio_missing(client: TestClient, tmp_path: Path) -> None:
     (tmp_path / "Music" / "t2.flac").unlink()
     assert client.get(f"/api/audio/{track}").status_code == 404
     assert client.get("/api/audio/9999").status_code == 404
+
+
+def _decode(payload: dict) -> np.ndarray:  # type: ignore[type-arg]
+    raw = base64.b64decode(payload["vectors"])
+    return np.frombuffer(raw, dtype="<f4").reshape(len(payload["id"]), payload["dims"])
+
+
+def test_embeddings_align_with_the_map(client: TestClient) -> None:
+    payload = client.get("/api/embeddings").json()
+    assert payload["id"] == client.get("/api/map").json()["id"]  # failed track excluded
+    vectors = _decode(payload)
+    assert payload["dims"] == 4  # capped at n - 1 for a 5-track library
+    np.testing.assert_allclose(np.linalg.norm(vectors, axis=1), 1, atol=1e-5)
+
+
+def test_embedding_cosines_follow_the_full_embeddings() -> None:
+    """The PCA projection keeps the neighbor order: nearest in 1280-d stays nearest in 32-d."""
+    rng = np.random.default_rng(0)
+    centers = rng.normal(size=(4, 1280))
+    raw = np.concatenate([c + 0.3 * rng.normal(size=(25, 1280)) for c in centers]) + 5.0
+    unit = (raw / np.linalg.norm(raw, axis=1, keepdims=True)).astype(np.float32)
+    index = queries.EmbeddingIndex(np.arange(100), unit, (0, None))
+    reduced = index.reduced(32)
+    assert reduced.shape == (100, 32)
+    same = reduced[0] @ reduced[1:25].T  # same cluster as track 0
+    other = reduced[0] @ reduced[25:].T
+    assert same.min() > other.max()
+    # The shared offset makes raw cosines bunch up near 1; centered ones spread out.
+    assert (unit[0] @ unit[25:].T).min() > 0.9 and other.max() < 0.5
+    assert index.reduced(32) is reduced  # cached
+
+
+def test_reduced_embeddings_do_not_depend_on_row_order() -> None:
+    """Component signs are fixed, so reordering the library can't flip the projection."""
+    rng = np.random.default_rng(1)
+    unit = rng.normal(size=(50, 64)).astype(np.float32)
+    perm = rng.permutation(50)
+    a = queries.EmbeddingIndex(np.arange(50), unit, (0, None)).reduced(8)
+    b = queries.EmbeddingIndex(np.arange(50), unit[perm], (0, None)).reduced(8)
+    np.testing.assert_allclose(a[perm], b, atol=1e-4)
+
+
+def test_embeddings_of_an_empty_library(engine: Engine) -> None:
+    with TestClient(create_app(engine=engine)) as c:
+        assert c.get("/api/embeddings").json() == {"id": [], "dims": 0, "vectors": ""}

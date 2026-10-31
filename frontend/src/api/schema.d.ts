@@ -89,6 +89,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/embeddings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Embeddings
+         * @description Compact style vectors for the path planner, aligned with ``/api/map``.
+         */
+        get: operations["embeddings_api_embeddings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/map": {
         parameters: {
             query?: never;
@@ -157,6 +177,24 @@ export interface components {
             id: number;
             /** Format */
             format: string;
+        };
+        /**
+         * Embeddings
+         * @description Compact per-track style vectors for the in-browser path planner, aligned with ``MoodMap.id``.
+         *
+         *     Discogs-EffNet embeddings, centered and projected onto their top principal components, then
+         *     L2-normalized, so a dot product is a cosine similarity. Tracks without an embedding get zeros.
+         */
+        Embeddings: {
+            /** Id */
+            id: number[];
+            /** Dims */
+            dims: number;
+            /**
+             * Vectors
+             * @description Base64 of little-endian float32, row-major: len(id) rows of `dims` values
+             */
+            vectors: string;
         };
         /** Features2007Out */
         Features2007Out: {
@@ -567,6 +605,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    embeddings_api_embeddings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Embeddings"];
                 };
             };
         };

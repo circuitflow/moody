@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { decodeEmbeddings } from "../features/path/embeddings";
 import { useDataSource } from "./context";
 
 export function useMeta() {
@@ -32,6 +33,16 @@ export function useNeighbors(id: number) {
   return useQuery({
     queryKey: ["neighbors", id],
     queryFn: () => source.neighbors(id),
+    staleTime: Infinity,
+  });
+}
+
+/** Style vectors for the path planner, decoded once. */
+export function useStyleVectors() {
+  const source = useDataSource();
+  return useQuery({
+    queryKey: ["embeddings"],
+    queryFn: async () => decodeEmbeddings(await source.embeddings()),
     staleTime: Infinity,
   });
 }

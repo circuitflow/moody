@@ -9,3 +9,4 @@ export type TrackDetail = S["TrackDetail"];
 export type TrackSummary = S["TrackSummary"];
 export type Neighbor = S["Neighbor"];
 export type Segment = S["SegmentOut"];
+export type Embeddings = S["Embeddings"];

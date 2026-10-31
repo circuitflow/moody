@@ -7,7 +7,7 @@ from typer.testing import CliRunner
 
 from moody.analysis.analyzer import FakeAnalyzer
 from moody.api import queries
-from moody.api.schemas import MapValues, Meta, MoodMap, Neighbor, TrackDetail
+from moody.api.schemas import Embeddings, MapValues, Meta, MoodMap, Neighbor, TrackDetail
 from moody.cli import app
 from moody.config import get_settings
 from moody.export import export_static, field_filename
@@ -33,6 +33,8 @@ def test_export_round_trips_through_api_schemas(
     assert meta.audio is False and meta.analyzed == 6
     mood_map = MoodMap.model_validate_json((out / "map.json").read_text())
     assert len(mood_map.id) == 6
+    embeddings = Embeddings.model_validate_json((out / "embeddings.json").read_text())
+    assert embeddings.id == mood_map.id and embeddings.dims == 5
     for field in meta.map_fields:
         values = MapValues.model_validate_json(
             (out / "map-values" / field_filename(field)).read_text()

@@ -3,7 +3,7 @@
  * serve both the self-hosted app (FastAPI) and the static GitHub Pages demo.
  * The static layout is written by `moody export-static` and mirrors the API one-to-one.
  */
-import type { MapValues, Meta, MoodMap, Neighbor, TrackDetail } from "../api/types";
+import type { Embeddings, MapValues, Meta, MoodMap, Neighbor, TrackDetail } from "../api/types";
 
 export interface DataSource {
   readonly kind: "api" | "static";
@@ -12,6 +12,8 @@ export interface DataSource {
   mapValues(field: string): Promise<MapValues>;
   track(id: number): Promise<TrackDetail>;
   neighbors(id: number): Promise<Neighbor[]>;
+  /** Compact style vectors for the path planner, aligned with `map().id`. */
+  embeddings(): Promise<Embeddings>;
   /** A playable URL for the track's audio, or null when the source has none. */
   audioUrl(id: number): string | null;
 }
@@ -40,6 +42,9 @@ export class ApiDataSource implements DataSource {
   neighbors(id: number) {
     return getJson<Neighbor[]>(`${this.baseUrl}/api/tracks/${id}/neighbors`);
   }
+  embeddings() {
+    return getJson<Embeddings>(`${this.baseUrl}/api/embeddings`);
+  }
   audioUrl(id: number) {
     return `${this.baseUrl}/api/audio/${id}`;
   }
@@ -62,6 +67,9 @@ export class StaticDataSource implements DataSource {
   }
   neighbors(id: number) {
     return getJson<Neighbor[]>(`${this.dataUrl}/neighbors/${id}.json`);
+  }
+  embeddings() {
+    return getJson<Embeddings>(`${this.dataUrl}/embeddings.json`);
   }
   audioUrl() {
     return null;

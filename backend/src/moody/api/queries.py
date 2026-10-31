@@ -6,7 +6,8 @@ bundle is guaranteed to have exactly the shapes the API serves.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import base64
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from moody.analysis.analyzer import MOOD_TAGS
 from moody.analysis.models import EFFNET, pipeline_version
 from moody.api.schemas import (
     Alternate,
+    Embeddings,
     Features2007Out,
     MapValues,
     Meta,
@@ -39,6 +41,7 @@ from moody.store.models import Analysis, Embedding, Track
 SCALAR_FIELDS = ("bpm", "loudness")
 MAP_FIELDS = (*SCALAR_FIELDS, *(f"tag:{t}" for t in sorted(MOOD_TAGS)))
 NEIGHBOR_MODEL = EFFNET
+REDUCED_DIMS = 32  # style vector size for the in-browser path planner
 # Copies of another track (moody.ingest.duplicates) are hidden from the catalog.
 PRIMARY = Track.duplicate_of.is_(None)
 
@@ -197,6 +200,7 @@ class EmbeddingIndex:
     ids: npt.NDArray[np.int64]
     matrix: npt.NDArray[np.float32]
     signature: tuple[int, datetime | None]
+    _reduced: dict[int, npt.NDArray[np.float32]] = field(default_factory=dict, repr=False)
 
     @staticmethod
     def signature_of(session: Session) -> tuple[int, datetime | None]:
@@ -221,6 +225,32 @@ class EmbeddingIndex:
         unit = (raw / np.where(norms == 0, 1, norms)).astype(np.float32)
         ids = np.array([r.track_id for r in rows], dtype=np.int64)
         return cls(ids, unit, cls.signature_of(session))
+
+    def reduced(self, dims: int = REDUCED_DIMS) -> npt.NDArray[np.float32]:
+        """Rows of ``matrix`` centered, projected onto the top ``dims`` principal components and
+        L2-normalized (computed once per index). Centering removes the direction every EffNet
+        embedding shares, so cosines spread out instead of all sitting near 1."""
+        if dims in self._reduced:
+            return self._reduced[dims]
+        n, d = self.matrix.shape
+        k = min(dims, d, max(n - 1, 0))
+        if k == 0:
+            out = np.zeros((n, 0), np.float32)
+        else:
+            x = self.matrix.astype(np.float64)
+            mean = x.mean(axis=0)
+            # Covariance eigenvectors instead of an SVD of the data: no n x d copies.
+            cov = x.T @ x - n * np.outer(mean, mean)
+            _, vecs = np.linalg.eigh(cov)
+            basis = vecs[:, ::-1][:, :k]
+            # Fix each component's sign so exports are byte-for-byte reproducible.
+            signs = np.sign(basis[np.abs(basis).argmax(axis=0), np.arange(k)])
+            basis = basis * np.where(signs == 0, 1, signs)
+            proj = x @ basis - mean @ basis
+            norms = np.linalg.norm(proj, axis=1, keepdims=True)
+            out = (proj / np.where(norms == 0, 1, norms)).astype(np.float32)
+        self._reduced[dims] = out
+        return out
 
     def nearest(self, track_id: int, k: int) -> list[tuple[int, float]]:
         hits = np.flatnonzero(self.ids == track_id)
@@ -262,3 +292,20 @@ def neighbors(session: Session, index: EmbeddingIndex, track_id: int, k: int) ->
             )
         )
     return out
+
+
+def embeddings(session: Session, index: EmbeddingIndex, dims: int = REDUCED_DIMS) -> Embeddings:
+    """Reduced style vectors in ``mood_map`` order (see ``schemas.Embeddings``)."""
+    ids = list(
+        session.scalars(select(Track.id).join(Track.analysis).where(PRIMARY).order_by(Track.id))
+    )
+    reduced = index.reduced(dims)
+    out = np.zeros((len(ids), reduced.shape[1]), dtype="<f4")
+    row_of = {int(t): i for i, t in enumerate(index.ids)}
+    for row, track_id in enumerate(ids):
+        j = row_of.get(track_id)
+        if j is not None:
+            out[row] = reduced[j]
+    return Embeddings(
+        id=ids, dims=int(out.shape[1]), vectors=base64.b64encode(out.tobytes()).decode("ascii")
+    )

@@ -262,6 +262,28 @@
         }
       }
     },
+    "/api/embeddings": {
+      "get": {
+        "tags": [
+          "library"
+        ],
+        "summary": "Embeddings",
+        "description": "Compact style vectors for the path planner, aligned with ``/api/map``.",
+        "operationId": "embeddings_api_embeddings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Embeddings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/map": {
       "get": {
         "tags": [
@@ -387,6 +409,34 @@
         ],
         "title": "Alternate",
         "description": "Another file of the same recording (e.g. the MP3 next to a WAV), hidden from the catalog."
+      },
+      "Embeddings": {
+        "properties": {
+          "id": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Id"
+          },
+          "dims": {
+            "type": "integer",
+            "title": "Dims"
+          },
+          "vectors": {
+            "type": "string",
+            "title": "Vectors",
+            "description": "Base64 of little-endian float32, row-major: len(id) rows of `dims` values"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "dims",
+          "vectors"
+        ],
+        "title": "Embeddings",
+        "description": "Compact per-track style vectors for the in-browser path planner, aligned with ``MoodMap.id``.\n\nDiscogs-EffNet embeddings, centered and projected onto their top principal components, then\nL2-normalized, so a dot product is a cosine similarity. Tracks without an embedding get zeros."
       },
       "Features2007Out": {
         "properties": {

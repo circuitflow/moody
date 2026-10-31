@@ -4,6 +4,7 @@ Layout (mirrors the API one-to-one, so ``StaticDataSource`` can swap in for ``Ap
 
     meta.json                  GET /api/meta (audio: false)
     map.json                   GET /api/map
+    embeddings.json            GET /api/embeddings
     map-values/<field>.json    GET /api/map/values?field=<field>  (":" in field -> "-")
     tracks/<id>.json           GET /api/tracks/<id>
     neighbors/<id>.json        GET /api/tracks/<id>/neighbors?k=<k>
@@ -51,6 +52,8 @@ def export_static(sessions: sessionmaker[Session], out: Path, *, k: int = 10) ->
             _write(out / "map-values" / field_filename(field), queries.map_values(session, field))
             files += 1
         index = queries.EmbeddingIndex.build(session)
+        _write(out / "embeddings.json", queries.embeddings(session, index))
+        files += 1
         track_ids = list(
             session.scalars(
                 select(Analysis.track_id)

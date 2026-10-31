@@ -1,5 +1,6 @@
 /** A small deterministic in-memory library for component tests. */
-import type { MapValues, Meta, MoodMap, Neighbor, TrackDetail } from "../api/types";
+import type { Embeddings, MapValues, Meta, MoodMap, Neighbor, TrackDetail } from "../api/types";
+import { encodeEmbeddings } from "../features/path/embeddings";
 import type { DataSource } from "../data/source";
 
 const OCTANTS = [
@@ -85,6 +86,13 @@ export class FakeSource implements DataSource {
         id: x.id, title: x.title, artist: x.artist, similarity: 0.9 - i * 0.1,
         valence: x.valence, arousal: x.arousal, octant: octantOf(x.valence, x.arousal),
       }));
+  }
+  async embeddings(): Promise<Embeddings> {
+    // A unit vector per track, at an angle set by its id: nearby ids sound alike.
+    return encodeEmbeddings(
+      this.tracks.map((x) => x.id),
+      this.tracks.map((x) => [Math.cos(x.id * 0.7), Math.sin(x.id * 0.7)]),
+    );
   }
   audioUrl(id: number): string | null {
     return `/api/audio/${id}`;
