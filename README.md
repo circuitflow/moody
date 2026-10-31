@@ -11,11 +11,12 @@ It is a 2026 rewrite of a 2007 thesis project of the same name. The original Moo
 features from a folder of MP3s. This version uses pretrained deep audio embeddings (Essentia's
 Discogs-EffNet and MSD-MusiCNN), a web UI, and streaming-service integration.
 
-> **Status:** M3 done: analysis core, an explore UI (mood map, track pages, list), mood-path
-> playlists (M3U and Spotify export) and listening history from Last.fm and Spotify. See the
+> **Status:** M4 done in code: analysis core, explore UI, mood-path playlists (M3U and Spotify),
+> listening history, scanning from the app, an evaluation report and a public demo pipeline. The
+> demo at https://circuitflow.github.io/moody/ goes live after its first bundle run. See the
 > [design spec](docs/superpowers/specs/2026-09-28-moody-rewrite-design.md) and the plans for
-> [M0–M1](docs/superpowers/plans/2026-09-28-moody-m0-m1.md), [M2](docs/superpowers/plans/2026-10-31-moody-m2.md)
-> and [M3](docs/superpowers/plans/2026-10-31-moody-m3.md).
+> [M0–M1](docs/superpowers/plans/2026-09-28-moody-m0-m1.md), [M2](docs/superpowers/plans/2026-10-31-moody-m2.md),
+> [M3](docs/superpowers/plans/2026-10-31-moody-m3.md) and [M4](docs/superpowers/plans/2026-11-01-moody-m4.md).
 
 ## Quick start (self-hosted)
 
