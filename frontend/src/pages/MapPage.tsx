@@ -68,11 +68,13 @@ export function MapPage() {
         map={map}
         filters={filters}
         setFilters={setFilters}
-        colorBy={colorBy}
-        setColorBy={setColorBy}
-        domainMode={domainMode}
-        setDomainMode={setDomainMode}
-        onResetZoom={() => setResetKey((k) => k + 1)}
+        mapOptions={{
+          colorBy,
+          setColorBy,
+          domainMode,
+          setDomainMode,
+          onResetZoom: () => setResetKey((k) => k + 1),
+        }}
       />
       <p className="count num" aria-live="polite">
         Showing {shown} of {map.id.length} tracks

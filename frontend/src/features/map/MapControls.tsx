@@ -11,11 +11,7 @@ function toggle<T>(set: ReadonlySet<T>, item: T): Set<T> {
   return next;
 }
 
-interface Props {
-  meta: Meta;
-  map: MoodMap;
-  filters: Filters;
-  setFilters: (f: Filters) => void;
+export interface MapOnlyControls {
   colorBy: ColorBy;
   setColorBy: (c: ColorBy) => void;
   domainMode: "fit" | "full";
@@ -23,13 +19,22 @@ interface Props {
   onResetZoom: () => void;
 }
 
-export function MapControls(props: Props) {
-  const { meta, map, filters, setFilters, colorBy, setColorBy } = props;
+interface Props {
+  meta: Meta;
+  map: MoodMap;
+  filters: Filters;
+  setFilters: (f: Filters) => void;
+  /** Color-by and view buttons; omitted in the list view, which shares the filters. */
+  mapOptions?: MapOnlyControls;
+}
+
+export function MapControls({ meta, map, filters, setFilters, mapOptions }: Props) {
   const frequent = tagFrequencies(map);
   const chips = frequent.slice(0, TOP_TAG_CHIPS).map(([t]) => t);
   const others = frequent.slice(TOP_TAG_CHIPS).map(([t]) => t);
+  const colorBy = mapOptions?.colorBy;
   const colorValue =
-    colorBy.kind === "field" ? colorBy.field : colorBy.kind === "agreement" ? "agreement" : "none";
+    colorBy?.kind === "field" ? colorBy.field : colorBy?.kind === "agreement" ? "agreement" : "none";
   const dirty = filters.query || filters.tags.size || filters.octants.size;
 
   return (
@@ -42,38 +47,42 @@ export function MapControls(props: Props) {
           value={filters.query}
           onChange={(e) => setFilters({ ...filters, query: e.target.value })}
         />
-        <label>
-          Color by{" "}
-          <select
-            value={colorValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              setColorBy(v === "none" ? { kind: "none" } : v === "agreement" ? { kind: "agreement" } : { kind: "field", field: v });
-            }}
-          >
-            <option value="none">Nothing (one color)</option>
-            <option value="agreement">2007 vs 2026 octant</option>
-            <option value="bpm">Tempo (BPM)</option>
-            <option value="loudness">Loudness (LUFS)</option>
-            <optgroup label="Mood tag probability">
-              {meta.mood_tags.map((t) => (
-                <option key={t} value={`tag:${t}`}>
-                  {t}
-                </option>
-              ))}
-            </optgroup>
-          </select>
-        </label>
-        <span className="spacer" />
-        <button type="button" aria-pressed={props.domainMode === "fit"} onClick={() => props.setDomainMode("fit")}>
-          Fit data
-        </button>
-        <button type="button" aria-pressed={props.domainMode === "full"} onClick={() => props.setDomainMode("full")}>
-          Full circumplex
-        </button>
-        <button type="button" onClick={props.onResetZoom}>
-          Reset zoom
-        </button>
+        {mapOptions && (
+          <>
+            <label>
+              Color by{" "}
+              <select
+                value={colorValue}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  mapOptions.setColorBy(v === "none" ? { kind: "none" } : v === "agreement" ? { kind: "agreement" } : { kind: "field", field: v });
+                }}
+              >
+                <option value="none">Nothing (one color)</option>
+                <option value="agreement">2007 vs 2026 octant</option>
+                <option value="bpm">Tempo (BPM)</option>
+                <option value="loudness">Loudness (LUFS)</option>
+                <optgroup label="Mood tag probability">
+                  {meta.mood_tags.map((t) => (
+                    <option key={t} value={`tag:${t}`}>
+                      {t}
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </label>
+            <span className="spacer" />
+            <button type="button" aria-pressed={mapOptions.domainMode === "fit"} onClick={() => mapOptions.setDomainMode("fit")}>
+              Fit data
+            </button>
+            <button type="button" aria-pressed={mapOptions.domainMode === "full"} onClick={() => mapOptions.setDomainMode("full")}>
+              Full circumplex
+            </button>
+            <button type="button" onClick={mapOptions.onResetZoom}>
+              Reset zoom
+            </button>
+          </>
+        )}
       </div>
       <div className="control-row chips" aria-label="Mood tags">
         {chips.map((t) => (
