@@ -25,3 +25,14 @@ Pearson r of each signal with model and human valence/arousal. The V-A columns s
 | party | +0.62 | +0.58 | +0.03 | +0.52 | +0.52 | -0.06 |
 | bpm | +0.10 | +0.09 | +0.01 | +0.07 | +0.07 | -0.00 |
 | loudness | +0.53 | +0.39 | +0.18 | +0.44 | +0.41 | -0.02 |
+
+## 2007 vs 2026: Russell octants
+
+Octants around the neutral point of each scale (DEAM 5 on 1-9; Moody 0 on -1..1). The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic; the 2007 tree never saw DEAM.
+
+| clips | model | n | exact octant | within one | mean angle error | chance |
+|---|---|---|---|---|---|---|
+| all | 2026_head | 400 | 48% | 88% | 33° | 24% |
+| all | 2007_tree | 400 | 12% | 40% | 90° | 24% |
+| clear (radius >= 0.25) | 2026_head | 289 | 53% | 93% | 26° | 28% |
+| clear (radius >= 0.25) | 2007_tree | 289 | 10% | 41% | 89° | 28% |

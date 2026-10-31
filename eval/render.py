@@ -108,7 +108,15 @@ def markdown(s: dict[str, Any]) -> str:
                         f"| {name} | {_pct(m['exact'])} | {_pct(m['within_one'])} "
                         f"| {m['mean_angle_error_deg']:.0f}° |"
                     )
-            lines += ["", f"Always guessing the most common octant: {_pct(c['chance_exact'])}.", ""]
+            lines += [
+                "",
+                f"Always guessing the most common octant: {_pct(c['chance_exact'])}; "
+                "picking at random: 12.5%, with a 90° mean angle error. The 2007 tree runs on its "
+                "five features re-derived with Essentia (CLAM and The Echo Nest are gone), and "
+                "those mappings aren't yet calibrated against the thesis songs, so its row "
+                "measures the port as much as the 2007 model.",
+                "",
+            ]
     t = s["tags"]
     if t:
         lines += [

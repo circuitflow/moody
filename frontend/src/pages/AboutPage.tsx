@@ -40,7 +40,7 @@ export function AboutPage({ data = evaluation }: { data?: Evaluation }) {
                 <Stat
                   label="Right octant, 2026 vs 2007"
                   value={`${pct(deam.octants.clear["2026_head"].exact)} vs ${pct(deam.octants.clear["2007_tree"].exact)}`}
-                  note="DEAM clips away from neutral"
+                  note="DEAM clips away from neutral; 2007 = uncalibrated port"
                 />
               )}
             </div>

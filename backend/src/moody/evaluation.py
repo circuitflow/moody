@@ -205,6 +205,11 @@ def octant_report(
             ),
             "chance_exact": round(float(counts.max() / max(1, len(idx))), 4),
             "rated_octants": {Octant(k).label: int(c) for k, c in enumerate(counts) if c},
+            "predicted_octants_2007": {
+                Octant(k).label: int(c)
+                for k, c in enumerate(np.bincount([old[i] for i in idx_old], minlength=8))
+                if c
+            },
         }
 
     return {
@@ -213,7 +218,10 @@ def octant_report(
         "clear_radius": CLEAR_RADIUS,
         "note": (
             "Octants around the neutral point of each scale (DEAM 5 on 1-9; Moody 0 on -1..1). "
-            "The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic; "
-            "the 2007 tree never saw DEAM."
+            "The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic. "
+            "The 2007 tree never saw DEAM, and runs on its five features re-derived with "
+            "Essentia (the original CLAM and Echo Nest tools are gone); those mappings are not "
+            "yet calibrated against the thesis songs, so this measures the port as much as the "
+            "2007 model."
         ),
     }

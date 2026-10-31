@@ -79,6 +79,15 @@ history and playlist export.
 
 Predicted valence and arousal correlate at +0.80, against +0.55 between listeners' ratings: the model leans on one "intensity" axis. Loudness correlates +0.18 with predicted valence minus arousal, -0.02 with rated: loud music looks happier to the model than to people.
 
+**2007 thesis vs 2026** on Russell's eight octants, DEAM clips whose rated mood is clearly away from neutral (289 clips):
+
+| model | exact octant | within one octant | mean angle error |
+|---|---|---|---|
+| 2026 (DEAM head) | 53% | 93% | 26° |
+| 2007 (decision tree) | 10% | 41% | 89° |
+
+Always guessing the most common octant: 28%; picking at random: 12.5%, with a 90° mean angle error. The 2007 tree runs on its five features re-derived with Essentia (CLAM and The Echo Nest are gone), and those mappings aren't yet calibrated against the thesis songs, so its row measures the port as much as the 2007 model.
+
 Details: [`eval/results/`](eval/results/).
 <!-- eval:end -->
 

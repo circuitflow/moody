@@ -126,3 +126,4 @@ def test_octant_report() -> None:
     assert clear["2026_head"]["n"] == 3  # the near-neutral clip drops out
     assert clear["chance_exact"] == pytest.approx(1 / 3, abs=1e-4)
     assert r["all"]["rated_octants"] == {"Pleasure": 1, "Excitement": 2, "Depression": 1}
+    assert r["all"]["predicted_octants_2007"] == {"Pleasure": 1, "Excitement": 1, "Arousal": 1}
