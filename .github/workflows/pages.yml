@@ -1,4 +1,5 @@
-# Builds the frontend against the static demo bundle and publishes it to GitHub Pages.
+# Builds the frontend against the latest demo bundle (a demo-bundle-* release made by the
+# Demo bundle workflow), smoke-tests it in a browser, and publishes it to GitHub Pages.
 # One-time setup: Settings → Pages → Source: "GitHub Actions".
 name: Pages
 
@@ -30,6 +31,25 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-fund --no-audit
+      - name: Fetch the latest demo bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --repo "${{ github.repository }}" --limit 100 --json tagName,createdAt \
+            --jq '[.[] | select(.tagName | startswith("demo-bundle-"))] | sort_by(.createdAt) | last | .tagName // empty')
+          if [ -z "$tag" ]; then
+            echo "::error::No demo-bundle-* release yet: run the Demo bundle workflow first."; exit 1
+          fi
+          gh release download "$tag" --repo "${{ github.repository }}" --pattern demo-bundle.tar.gz --dir ..
+          mkdir -p public/data
+          tar xzf ../demo-bundle.tar.gz -C public/data
+          echo "Demo data: $tag ($(ls public/data/tracks | wc -l) tracks)" >> "$GITHUB_STEP_SUMMARY"
+      - name: Smoke-test the demo in a browser
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright test e2e/smoke.spec.ts
+        env:
+          CI: "1"
       - run: npm run build
         env:
           VITE_DATA_SOURCE: static
