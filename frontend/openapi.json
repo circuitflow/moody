@@ -752,6 +752,89 @@
           }
         }
       }
+    },
+    "/api/history": {
+      "get": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Get History",
+        "operationId": "get_history_api_history_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistorySummary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/lastfm": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Import Lastfm",
+        "operationId": "import_lastfm_api_history_lastfm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LastfmImportRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryImport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/history/spotify": {
+      "post": {
+        "tags": [
+          "history"
+        ],
+        "summary": "Import Spotify",
+        "operationId": "import_spotify_api_history_spotify_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryImport"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -866,6 +949,167 @@
           "version"
         ],
         "title": "Health"
+      },
+      "HistoryImport": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "new": {
+            "type": "integer",
+            "title": "New"
+          },
+          "duplicates": {
+            "type": "integer",
+            "title": "Duplicates"
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped"
+          },
+          "more": {
+            "type": "boolean",
+            "title": "More",
+            "description": "Stopped at the per-request page limit; call again to go on"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "new",
+          "duplicates",
+          "skipped",
+          "more",
+          "plays",
+          "matched"
+        ],
+        "title": "HistoryImport"
+      },
+      "HistorySource": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "description": "lastfm | spotify | spotify-export"
+          },
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched",
+            "description": "Plays matched to a library track (only these have a mood)"
+          },
+          "first": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First"
+          },
+          "last": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "plays",
+          "matched",
+          "first",
+          "last"
+        ],
+        "title": "HistorySource"
+      },
+      "HistorySummary": {
+        "properties": {
+          "plays": {
+            "type": "integer",
+            "title": "Plays"
+          },
+          "matched": {
+            "type": "integer",
+            "title": "Matched"
+          },
+          "sources": {
+            "items": {
+              "$ref": "#/components/schemas/HistorySource"
+            },
+            "type": "array",
+            "title": "Sources"
+          },
+          "lastfm_configured": {
+            "type": "boolean",
+            "title": "Lastfm Configured"
+          },
+          "lastfm_user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lastfm User"
+          },
+          "spotify_connected": {
+            "type": "boolean",
+            "title": "Spotify Connected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plays",
+          "matched",
+          "sources",
+          "lastfm_configured",
+          "lastfm_user",
+          "spotify_connected"
+        ],
+        "title": "HistorySummary"
+      },
+      "LastfmImportRequest": {
+        "properties": {
+          "user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User",
+            "description": "Default: MOODY_LASTFM_USER"
+          }
+        },
+        "type": "object",
+        "title": "LastfmImportRequest"
       },
       "MapValues": {
         "properties": {

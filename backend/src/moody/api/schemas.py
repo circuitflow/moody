@@ -190,3 +190,34 @@ class SpotifyExport(BaseModel):
     matched: int
     total: int
     unmatched: list[TrackSummary]
+
+
+class HistorySource(BaseModel):
+    source: str = Field(description="lastfm | spotify | spotify-export")
+    plays: int
+    matched: int = Field(description="Plays matched to a library track (only these have a mood)")
+    first: datetime | None
+    last: datetime | None
+
+
+class HistorySummary(BaseModel):
+    plays: int
+    matched: int
+    sources: list[HistorySource]
+    lastfm_configured: bool
+    lastfm_user: str | None
+    spotify_connected: bool
+
+
+class LastfmImportRequest(BaseModel):
+    user: str | None = Field(None, description="Default: MOODY_LASTFM_USER")
+
+
+class HistoryImport(BaseModel):
+    source: str
+    new: int
+    duplicates: int
+    skipped: int
+    more: bool = Field(description="Stopped at the per-request page limit; call again to go on")
+    plays: int
+    matched: int

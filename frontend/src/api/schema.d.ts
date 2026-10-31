@@ -289,6 +289,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get History */
+        get: operations["get_history_api_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/history/lastfm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Lastfm */
+        post: operations["import_lastfm_api_history_lastfm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/history/spotify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Spotify */
+        post: operations["import_spotify_api_history_spotify_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -345,6 +396,68 @@ export interface components {
             status: string;
             /** Version */
             version: string;
+        };
+        /** HistoryImport */
+        HistoryImport: {
+            /** Source */
+            source: string;
+            /** New */
+            new: number;
+            /** Duplicates */
+            duplicates: number;
+            /** Skipped */
+            skipped: number;
+            /**
+             * More
+             * @description Stopped at the per-request page limit; call again to go on
+             */
+            more: boolean;
+            /** Plays */
+            plays: number;
+            /** Matched */
+            matched: number;
+        };
+        /** HistorySource */
+        HistorySource: {
+            /**
+             * Source
+             * @description lastfm | spotify | spotify-export
+             */
+            source: string;
+            /** Plays */
+            plays: number;
+            /**
+             * Matched
+             * @description Plays matched to a library track (only these have a mood)
+             */
+            matched: number;
+            /** First */
+            first: string | null;
+            /** Last */
+            last: string | null;
+        };
+        /** HistorySummary */
+        HistorySummary: {
+            /** Plays */
+            plays: number;
+            /** Matched */
+            matched: number;
+            /** Sources */
+            sources: components["schemas"]["HistorySource"][];
+            /** Lastfm Configured */
+            lastfm_configured: boolean;
+            /** Lastfm User */
+            lastfm_user: string | null;
+            /** Spotify Connected */
+            spotify_connected: boolean;
+        };
+        /** LastfmImportRequest */
+        LastfmImportRequest: {
+            /**
+             * User
+             * @description Default: MOODY_LASTFM_USER
+             */
+            user?: string | null;
         };
         /**
          * MapValues
@@ -1235,6 +1348,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_history_api_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistorySummary"];
+                };
+            };
+        };
+    };
+    import_lastfm_api_history_lastfm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LastfmImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryImport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_spotify_api_history_spotify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoryImport"];
                 };
             };
         };

@@ -172,6 +172,25 @@ class ExternalId(Base):
     matched_at: Mapped[datetime] = mapped_column(default=utcnow)
 
 
+class Play(Base):
+    """One listen from a history source, matched to a library track when possible."""
+
+    __tablename__ = "plays"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(16), index=True)  # lastfm | spotify | spotify-export
+    played_at: Mapped[datetime] = mapped_column(index=True)  # UTC, start of the listen
+    artist: Mapped[str | None] = mapped_column(Text)
+    title: Mapped[str] = mapped_column(Text)
+    album: Mapped[str | None] = mapped_column(Text)
+    ms_played: Mapped[int | None]
+    external_id: Mapped[str | None] = mapped_column(Text)  # e.g. a Spotify URI
+    mbid: Mapped[str | None] = mapped_column(String(36))  # MusicBrainz recording id
+    track_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tracks.id", ondelete="SET NULL"), index=True
+    )
+
+
 class Job(Base):
     __tablename__ = "jobs"
 

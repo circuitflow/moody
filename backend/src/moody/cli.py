@@ -1,18 +1,30 @@
 """Command-line interface: ``moody --help``."""
 
+from __future__ import annotations
+
 import json
 import logging
 from pathlib import Path
-from typing import Annotated
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 
 from moody import __version__
 from moody.config import get_settings
 
+if TYPE_CHECKING:
+    from sqlalchemy.orm import Session
+
+    from moody.streaming.history import ImportReport
+
 app = typer.Typer(no_args_is_help=True, help="Moody: music mood analysis with modern MIR.")
 models_app = typer.Typer(no_args_is_help=True, help="Manage the pretrained Essentia models.")
 app.add_typer(models_app, name="models")
+history_app = typer.Typer(
+    no_args_is_help=True,
+    help="Import listening history (Last.fm, Spotify) and see how much of it matches your library.",
+)
+app.add_typer(history_app, name="history")
 
 ModelsDir = Annotated[
     Path | None, typer.Option("--dir", help="Models directory (default: MOODY_MODELS_DIR).")
@@ -234,3 +246,161 @@ def models_list(models_dir: ModelsDir = None) -> None:
 
     for name, present in models.status(models_dir or get_settings().models_dir).items():
         typer.echo(f"{'ok     ' if present else 'missing'}  {name}")
+
+
+def _history_summary(report: ImportReport, session: Session) -> None:
+    from moody.streaming import history
+
+    typer.echo(
+        f"{report.source}: {report.new:,} new plays, {report.duplicates:,} already imported, "
+        f"{report.skipped:,} skipped (under 30 s, podcasts)"
+    )
+    cov = history.coverage(session)
+    plays = sum(c.plays for c in cov.values())
+    matched = sum(c.matched for c in cov.values())
+    if plays:
+        typer.echo(
+            f"matched to your library: {matched:,} of {plays:,} plays ({matched / plays:.0%}). "
+            "Only matched plays can go on the mood map; scan more music to raise this."
+        )
+
+
+@history_app.command("lastfm")
+def history_lastfm(
+    user: Annotated[
+        str | None, typer.Argument(help="Last.fm user name (default: MOODY_LASTFM_USER).")
+    ] = None,
+    full: Annotated[
+        bool, typer.Option("--full", help="Read the whole history again, not only new scrobbles.")
+    ] = False,
+) -> None:
+    """Import Last.fm scrobbles (needs MOODY_LASTFM_API_KEY, free at last.fm/api)."""
+    import httpx2
+    from rich.progress import BarColumn, MofNCompleteColumn, Progress, TimeRemainingColumn
+
+    from moody.store import init_db, session_factory
+    from moody.streaming.imports import import_lastfm
+    from moody.streaming.lastfm import LastfmError
+
+    settings = get_settings()
+    name = user or settings.lastfm_user
+    if not settings.lastfm_api_key or not name:
+        typer.echo(
+            "Set MOODY_LASTFM_API_KEY (free: https://www.last.fm/api/account/create) and pass a "
+            "user name or set MOODY_LASTFM_USER.",
+            err=True,
+        )
+        raise typer.Exit(2)
+    engine = init_db(settings.database_url)
+    try:
+        with (
+            session_factory(engine)() as session,
+            httpx2.Client(timeout=30.0) as http,
+            Progress(
+                "[progress.description]{task.description}",
+                BarColumn(),
+                MofNCompleteColumn(),
+                TimeRemainingColumn(),
+            ) as progress,
+        ):
+            task = progress.add_task("pages", total=None)
+            try:
+                report = import_lastfm(
+                    session,
+                    http,
+                    settings.lastfm_api_key,
+                    name,
+                    full=full,
+                    on_page=lambda done, total: progress.update(task, completed=done, total=total),
+                )
+            except LastfmError as exc:
+                typer.echo(f"Last.fm: {exc}", err=True)
+                raise typer.Exit(1) from exc
+            progress.stop()
+            _history_summary(report, session)
+    finally:
+        engine.dispose()
+
+
+@history_app.command("spotify-export")
+def history_spotify_export(
+    path: Annotated[
+        Path,
+        typer.Argument(
+            exists=True, help="The .zip from Spotify, its folder, or one Streaming_History JSON."
+        ),
+    ],
+) -> None:
+    """Import a Spotify data download (Account > Privacy > Download your data).
+
+    The extended streaming history has every play since the account was made; the basic one
+    covers the last year."""
+    from moody.store import init_db, session_factory
+    from moody.streaming.imports import import_spotify_export
+
+    engine = init_db(get_settings().database_url)
+    try:
+        with session_factory(engine)() as session:
+            try:
+                report = import_spotify_export(session, path)
+            except FileNotFoundError as exc:
+                typer.echo(str(exc), err=True)
+                raise typer.Exit(1) from exc
+            _history_summary(report, session)
+    finally:
+        engine.dispose()
+
+
+@history_app.command("spotify")
+def history_spotify() -> None:
+    """Import your last 50 Spotify plays (connect Spotify in the web app first)."""
+    import httpx2
+
+    from moody.store import init_db, session_factory
+    from moody.streaming.imports import import_spotify_recent
+    from moody.streaming.spotify import SpotifyClient, SpotifyError
+
+    settings = get_settings()
+    if not settings.spotify_client_id:
+        typer.echo(
+            "Set MOODY_SPOTIFY_CLIENT_ID and connect Spotify in the web app first.", err=True
+        )
+        raise typer.Exit(2)
+    engine = init_db(settings.database_url)
+    try:
+        with session_factory(engine)() as session, httpx2.Client(timeout=30.0) as http:
+            client = SpotifyClient(session, http, settings.spotify_client_id)
+            try:
+                report = import_spotify_recent(session, client)
+            except SpotifyError as exc:
+                typer.echo(f"Spotify: {exc}", err=True)
+                raise typer.Exit(1) from exc
+            _history_summary(report, session)
+    finally:
+        engine.dispose()
+
+
+@history_app.command("status")
+def history_status() -> None:
+    """Plays per source and how many match your library (re-matches after new scans)."""
+    from moody.store import init_db, session_factory
+    from moody.streaming import history
+
+    engine = init_db(get_settings().database_url)
+    try:
+        with session_factory(engine)() as session:
+            newly = history.rematch(session)
+            cov = history.coverage(session)
+    finally:
+        engine.dispose()
+    if not cov:
+        typer.echo("No listening history yet: try `moody history lastfm <user>`.")
+        return
+    for source, c in sorted(cov.items()):
+        span = f"{c.first:%Y-%m-%d} to {c.last:%Y-%m-%d}" if c.first and c.last else ""
+        share = c.matched / c.plays if c.plays else 0
+        typer.echo(
+            f"{source:15} {c.plays:>8,} plays  {c.matched:>7,} matched ({share:.0%})  {span}"
+        )
+    if newly:
+        typer.echo(f"{newly:,} more plays matched after recent scans")

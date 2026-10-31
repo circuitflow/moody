@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from sqlalchemy import Engine
 
 from moody import __version__
-from moody.api import playlists, spotify, tracks
+from moody.api import history, playlists, spotify, tracks
 from moody.config import Settings, get_settings
 from moody.store import init_db, session_factory
 from moody.streaming.spotify import PendingLogins
@@ -69,6 +69,7 @@ def create_app(
     app.include_router(tracks.router)
     app.include_router(playlists.router)
     app.include_router(spotify.router)
+    app.include_router(history.router)
     if settings.ui_dir is not None:
         # Mounted last so /api routes win; the UI uses hash routes, so "/" is the only page.
         app.mount("/", StaticFiles(directory=settings.ui_dir, html=True), name="ui")

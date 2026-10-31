@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # owner to have Premium and allow 5 users.
     spotify_client_id: str | None = None
     spotify_redirect_uri: str = "http://127.0.0.1:8000/api/auth/spotify/callback"
+    # Last.fm history import: a free API key from last.fm/api/account/create.
+    lastfm_api_key: str | None = None
+    lastfm_user: str | None = None
 
     @property
     def database_url(self) -> str:

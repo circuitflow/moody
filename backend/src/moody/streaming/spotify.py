@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from moody.store.models import ExternalId, OAuthToken, Playlist, PlaylistItem, Track
+from moody.streaming.history import PlayRecord
 from moody.streaming.match import Candidate, best_match
 
 PROVIDER = "spotify"
@@ -323,3 +324,34 @@ def export_playlist(session: Session, client: SpotifyClient, playlist_id: int) -
         matched=len(uris),
         unmatched=unmatched,
     )
+
+
+def recently_played(client: SpotifyClient, after: datetime | None = None) -> list[PlayRecord]:
+    """Up to the last 50 plays (all the API keeps), oldest first.
+
+    Spotify's ``played_at`` is when playback ended; subtracting the track length gives the start,
+    which is what Last.fm stamps scrobbles with, so a play in both sources counts once.
+    """
+    params: dict[str, int] = {"limit": 50}
+    if after is not None:
+        params["after"] = int(after.timestamp() * 1000)
+    data = client.request("GET", "/me/player/recently-played", params=params) or {}
+    records = []
+    for item in data.get("items") or []:
+        track = item.get("track") or {}
+        if not track.get("name") or not item.get("played_at"):
+            continue
+        ended = datetime.fromisoformat(str(item["played_at"]).replace("Z", "+00:00"))
+        duration_ms = int(track.get("duration_ms") or 0)
+        artists = track.get("artists") or [{}]
+        records.append(
+            PlayRecord(
+                source="spotify",
+                played_at=_aware(ended) - timedelta(milliseconds=duration_ms),
+                title=str(track["name"]),
+                artist=artists[0].get("name"),
+                album=(track.get("album") or {}).get("name"),
+                external_id=track.get("uri"),
+            )
+        )
+    return sorted(records, key=lambda r: r.played_at)
