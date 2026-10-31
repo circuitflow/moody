@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy import Engine
 
@@ -52,4 +53,7 @@ def create_app(settings: Settings | None = None, engine: Engine | None = None) -
     )
     app.include_router(router)
     app.include_router(tracks.router)
+    if settings.ui_dir is not None:
+        # Mounted last so /api routes win; the UI uses hash routes, so "/" is the only page.
+        app.mount("/", StaticFiles(directory=settings.ui_dir, html=True), name="ui")
     return app

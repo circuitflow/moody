@@ -37,9 +37,25 @@ def serve(
     host: Annotated[str, typer.Option(help="Interface to bind.")] = "127.0.0.1",
     port: Annotated[int, typer.Option(help="Port to listen on.")] = 8000,
     reload: Annotated[bool, typer.Option(help="Auto-reload on code changes.")] = False,
+    ui: Annotated[
+        Path | None,
+        typer.Option(
+            exists=True, file_okay=False, help="Serve a built frontend (frontend/dist) at /."
+        ),
+    ] = None,
 ) -> None:
-    """Run the HTTP API."""
+    """Run the HTTP API (and, with --ui, the web app)."""
+    import os
+
     import uvicorn
+
+    if ui is not None:
+        if not (ui / "index.html").is_file():
+            typer.echo(f"error: {ui} has no index.html; run `npm run build` in frontend/", err=True)
+            raise typer.Exit(1)
+        os.environ["MOODY_UI_DIR"] = str(ui.resolve())  # read by the app factory's settings
+        get_settings.cache_clear()
+        typer.echo(f"Moody: http://{host}:{port}")
 
     uvicorn.run("moody.api.app:create_app", factory=True, host=host, port=port, reload=reload)
 

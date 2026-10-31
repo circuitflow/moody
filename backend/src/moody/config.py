@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     data_dir: Path = _default_data_dir()
     models_dir: Path = Path.home() / ".cache" / "moody" / "models"
     library_path: Path | None = None
+    # A built frontend (frontend/dist) to serve at "/", next to the API.
+    ui_dir: Path | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
     @property

@@ -42,18 +42,18 @@ jobs:
           else echo "::notice::Skipped: add a KAGGLE_API_TOKEN repository secret to run the DEAM evaluation."
           fi
         working-directory: .
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         if: steps.check.outputs.ready == 'true'
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
         if: steps.check.outputs.ready == 'true'
         with:
           enable-cache: true
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         if: steps.check.outputs.ready == 'true'
         with:
           path: .models
           key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         if: steps.check.outputs.ready == 'true'
         with:
           path: .deam
