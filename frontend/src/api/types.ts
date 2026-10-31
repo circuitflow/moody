@@ -13,3 +13,5 @@ export type Embeddings = S["Embeddings"];
 export type PlaylistCreate = S["PlaylistCreate"];
 export type PlaylistSummary = S["PlaylistSummary"];
 export type PlaylistDetail = S["PlaylistDetail"];
+export type SpotifyStatus = S["SpotifyStatus"];
+export type SpotifyExport = S["SpotifyExport"];

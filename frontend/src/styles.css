@@ -217,3 +217,7 @@ button[aria-pressed="true"] { border-color: var(--ink-2); font-weight: 600; }
 .playlist-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
 a.button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; text-decoration: none; }
 .playlist-tracks { max-width: 640px; }
+.spotify { margin: 8px 0; }
+.spotify-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.spotify .note p { margin: 0 0 4px; }
+button.link { border: none; background: none; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; }

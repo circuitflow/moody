@@ -174,3 +174,19 @@ class PlaylistSummary(BaseModel):
 class PlaylistDetail(PlaylistSummary):
     params: dict[str, Any]
     tracks: list[TrackSummary]
+
+
+class SpotifyStatus(BaseModel):
+    configured: bool = Field(description="MOODY_SPOTIFY_CLIENT_ID is set")
+    connected: bool
+    account: str | None = None
+    redirect_uri: str | None = None
+    error: str | None = Field(None, description="Why the last sign-in failed (shown once)")
+
+
+class SpotifyExport(BaseModel):
+    url: str
+    name: str
+    matched: int
+    total: int
+    unmatched: list[TrackSummary]

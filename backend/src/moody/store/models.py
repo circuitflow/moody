@@ -143,6 +143,35 @@ class PlaylistItem(Base):
     track: Mapped[Track] = relationship()
 
 
+class OAuthToken(Base):
+    """Tokens for a connected service, stored locally in plaintext (spec section 7)."""
+
+    __tablename__ = "oauth_tokens"
+
+    provider: Mapped[str] = mapped_column(String(16), primary_key=True)
+    access_token: Mapped[str] = mapped_column(Text)
+    refresh_token: Mapped[str | None] = mapped_column(Text)
+    expires_at: Mapped[datetime]
+    scope: Mapped[str] = mapped_column(Text, default="")
+    account_id: Mapped[str | None] = mapped_column(Text)
+    account_name: Mapped[str | None] = mapped_column(Text)
+    updated_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
+class ExternalId(Base):
+    """A library track's id on a streaming service (e.g. a Spotify URI), cached after matching."""
+
+    __tablename__ = "external_ids"
+
+    track_id: Mapped[int] = mapped_column(
+        ForeignKey("tracks.id", ondelete="CASCADE"), primary_key=True
+    )
+    provider: Mapped[str] = mapped_column(String(16), primary_key=True)
+    external_id: Mapped[str] = mapped_column(Text)
+    matched_by: Mapped[str] = mapped_column(String(16))  # isrc | search
+    matched_at: Mapped[datetime] = mapped_column(default=utcnow)
+
+
 class Job(Base):
     __tablename__ = "jobs"
 

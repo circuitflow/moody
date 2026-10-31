@@ -13,6 +13,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "alembic>=1.13",
     "mutagen>=1.47",
+    "httpx2>=2.13.1",  # Spotify and Last.fm (Starlette's test client uses it too)
 ]
 
 [project.optional-dependencies]
@@ -27,7 +28,6 @@ moody = "moody.cli:app"
 [dependency-groups]
 dev = [
     "pytest>=8",
-    "httpx2>=2.13.1",
     "ruff>=0.6",
     "mypy>=1.11",
     "soundfile>=0.13",

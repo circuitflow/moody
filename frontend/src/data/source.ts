@@ -12,6 +12,8 @@ import type {
   PlaylistCreate,
   PlaylistDetail,
   PlaylistSummary,
+  SpotifyExport,
+  SpotifyStatus,
   TrackDetail,
 } from "../api/types";
 
@@ -34,6 +36,11 @@ export interface DataSource {
   deletePlaylist(id: number): Promise<void>;
   /** Download URL for the playlist as M3U8 (absolute local paths), or null. */
   m3uUrl(id: number): string | null;
+  spotifyStatus(): Promise<SpotifyStatus>;
+  /** Where to send the browser to connect Spotify, returning to `returnTo` afterwards. */
+  spotifyLoginUrl(returnTo: string): string | null;
+  spotifyDisconnect(): Promise<void>;
+  exportToSpotify(playlistId: number): Promise<SpotifyExport>;
 }
 
 const NOT_IN_DEMO = "Saved playlists need the self-hosted app.";
@@ -103,6 +110,19 @@ export class ApiDataSource implements DataSource {
   m3uUrl(id: number) {
     return `${this.baseUrl}/api/playlists/${id}/m3u`;
   }
+  spotifyStatus() {
+    return getJson<SpotifyStatus>(`${this.baseUrl}/api/auth/spotify`);
+  }
+  spotifyLoginUrl(returnTo: string) {
+    return `${this.baseUrl}/api/auth/spotify/login?return_to=${encodeURIComponent(returnTo)}`;
+  }
+  async spotifyDisconnect() {
+    await send("DELETE", `${this.baseUrl}/api/auth/spotify`);
+  }
+  async exportToSpotify(playlistId: number) {
+    const resp = await send("POST", `${this.baseUrl}/api/playlists/${playlistId}/export/spotify`);
+    return (await resp.json()) as SpotifyExport;
+  }
 }
 
 export class StaticDataSource implements DataSource {
@@ -144,6 +164,18 @@ export class StaticDataSource implements DataSource {
   }
   m3uUrl() {
     return null;
+  }
+  async spotifyStatus(): Promise<SpotifyStatus> {
+    return { configured: false, connected: false };
+  }
+  spotifyLoginUrl() {
+    return null;
+  }
+  spotifyDisconnect(): Promise<void> {
+    return Promise.reject(new Error(NOT_IN_DEMO));
+  }
+  exportToSpotify(): Promise<SpotifyExport> {
+    return Promise.reject(new Error(NOT_IN_DEMO));
   }
 }
 

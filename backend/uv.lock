@@ -388,6 +388,7 @@ source = { editable = "." }
 dependencies = [
     { name = "alembic" },
     { name = "fastapi" },
+    { name = "httpx2" },
     { name = "mutagen" },
     { name = "numpy" },
     { name = "pydantic-settings" },
@@ -403,7 +404,6 @@ analysis = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx2" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "ruff" },
@@ -415,6 +415,7 @@ requires-dist = [
     { name = "alembic", specifier = ">=1.13" },
     { name = "essentia-tensorflow", marker = "extra == 'analysis'", specifier = "==2.1b6.dev1389" },
     { name = "fastapi", specifier = ">=0.115" },
+    { name = "httpx2", specifier = ">=2.13.1" },
     { name = "mutagen", specifier = ">=1.47" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pydantic-settings", specifier = ">=2.4" },
@@ -426,7 +427,6 @@ provides-extras = ["analysis"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx2", specifier = ">=2.13.1" },
     { name = "mypy", specifier = ">=1.11" },
     { name = "pytest", specifier = ">=8" },
     { name = "ruff", specifier = ">=0.6" },

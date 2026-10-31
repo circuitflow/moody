@@ -34,9 +34,14 @@ _TRACK_NUMBER = re.compile(r"^\s*(?:\d{1,2}-)?\d{1,3}(?:\s*[-._]\s*|\s+)")
 _NON_WORD = re.compile(r"[^\w]+")
 
 
+def strip_track_number(title: str) -> str:
+    """ "03 - Song" -> "Song", "1-02 Song" -> "Song"."""
+    return _TRACK_NUMBER.sub("", title)
+
+
 def normalize_title(title: str) -> str:
     """Case-, punctuation- and track-number-insensitive title key."""
-    return _NON_WORD.sub(" ", _TRACK_NUMBER.sub("", title).lower()).strip()
+    return _NON_WORD.sub(" ", strip_track_number(title).lower()).strip()
 
 
 def _title_key(track: Track) -> str:

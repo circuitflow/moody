@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # A built frontend (frontend/dist) to serve at "/", next to the API.
     ui_dir: Path | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # Spotify (playlist export, recently played). Create an app at developer.spotify.com with
+    # this exact redirect URI; PKCE needs no client secret. Development Mode apps need the
+    # owner to have Premium and allow 5 users.
+    spotify_client_id: str | None = None
+    spotify_redirect_uri: str = "http://127.0.0.1:8000/api/auth/spotify/callback"
 
     @property
     def database_url(self) -> str:

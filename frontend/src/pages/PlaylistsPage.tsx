@@ -5,6 +5,7 @@ import type { PlaylistDetail } from "../api/types";
 import { useDataSource } from "../data/context";
 import { useDeletePlaylist, usePlaylist, usePlaylists } from "../data/hooks";
 import { parsePathSearch } from "../features/path/anchors";
+import { SpotifyExport } from "../features/spotify/SpotifyExport";
 import { useLibrary } from "../state/library";
 
 const signed = (x: number | null | undefined) =>
@@ -128,6 +129,7 @@ function PlaylistView({ playlist }: { playlist: PlaylistDetail }) {
           </button>
         )}
       </div>
+      <SpotifyExport playlistId={playlist.id} />
       {m3u && (
         <p className="note muted">
           The M3U file lists the tracks' paths on this computer. In Apple Music choose File → Library → Import

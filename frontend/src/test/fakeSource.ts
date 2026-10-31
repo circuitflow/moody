@@ -8,6 +8,8 @@ import type {
   PlaylistCreate,
   PlaylistDetail,
   PlaylistSummary,
+  SpotifyExport,
+  SpotifyStatus,
   TrackDetail,
 } from "../api/types";
 import { encodeEmbeddings } from "../features/path/embeddings";
@@ -141,5 +143,29 @@ export class FakeSource implements DataSource {
   }
   m3uUrl(id: number): string | null {
     return `/api/playlists/${id}/m3u`;
+  }
+
+  // Spotify, simulated: set `spotify` to change the status; exports match all but `missing`.
+  spotify: SpotifyStatus = { configured: true, connected: false, account: null, redirect_uri: null, error: null };
+  missing = new Set<number>();
+  exports: number[] = [];
+  async spotifyStatus(): Promise<SpotifyStatus> {
+    return this.spotify;
+  }
+  spotifyLoginUrl(returnTo: string): string | null {
+    return `/api/auth/spotify/login?return_to=${encodeURIComponent(returnTo)}`;
+  }
+  async spotifyDisconnect(): Promise<void> {
+    this.spotify = { ...this.spotify, connected: false, account: null };
+  }
+  async exportToSpotify(playlistId: number): Promise<SpotifyExport> {
+    if (!this.spotify.connected) throw new Error("Spotify is not connected");
+    const p = await this.playlist(playlistId);
+    this.exports.push(playlistId);
+    const unmatched = p.tracks.filter((t) => this.missing.has(t.id));
+    return {
+      url: "https://open.spotify.com/playlist/pl1", name: p.name,
+      matched: p.tracks.length - unmatched.length, total: p.tracks.length, unmatched,
+    };
   }
 }

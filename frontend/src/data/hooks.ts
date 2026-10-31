@@ -81,3 +81,27 @@ export function useDeletePlaylist() {
     },
   });
 }
+
+export function useSpotifyStatus() {
+  const source = useDataSource();
+  return useQuery({ queryKey: ["spotify"], queryFn: () => source.spotifyStatus(), enabled: source.canSave });
+}
+
+export function useSpotifyDisconnect() {
+  const source = useDataSource();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => source.spotifyDisconnect(),
+    onSuccess: () => void client.invalidateQueries({ queryKey: ["spotify"] }),
+  });
+}
+
+export function useSpotifyExport() {
+  const source = useDataSource();
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (playlistId: number) => source.exportToSpotify(playlistId),
+    // A rejected sign-in disconnects on the server; refresh the status either way.
+    onSettled: () => void client.invalidateQueries({ queryKey: ["spotify"] }),
+  });
+}
