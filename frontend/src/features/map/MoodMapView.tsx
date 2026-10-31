@@ -4,7 +4,8 @@
  */
 import { select } from "d3-selection";
 import { zoom as d3zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zoom";
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import type { ScaleLinear } from "d3-scale";
+import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import type { MoodMap } from "../../api/types";
 import { AGREEMENT_TOKENS, readTokens, SEQ_STEPS, type Agreement } from "./colors";
 import {
@@ -17,6 +18,14 @@ import {
 } from "./geometry";
 import { selectInPolygon, type Polygon } from "./lasso";
 import { buildIndex, nearest, type ScreenPoint } from "./pick";
+
+/** What an overlay needs to draw in map coordinates. */
+export interface OverlayContext {
+  x: ScaleLinear<number, number>;
+  y: ScaleLinear<number, number>;
+  width: number;
+  height: number;
+}
 
 export type PointColors =
   | { kind: "single" }
@@ -41,9 +50,24 @@ interface Props {
   onOpen: (id: number) => void;
   domainMode: "fit" | "full";
   resetKey: number; // bump to reset zoom
+  /** Shift-drag lasso selection (default on). */
+  lasso?: boolean;
+  /** Extra SVG drawn above the points. Elements marked `data-no-zoom` can be dragged. */
+  overlay?: (ctx: OverlayContext) => ReactNode;
 }
 
-export function MoodMapView({ map, visible, colors, selection, onSelect, onOpen, domainMode, resetKey }: Props) {
+export function MoodMapView({
+  map,
+  visible,
+  colors,
+  selection,
+  onSelect,
+  onOpen,
+  domainMode,
+  resetKey,
+  lasso: lassoEnabled = true,
+  overlay,
+}: Props) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -94,7 +118,12 @@ export function MoodMapView({ map, visible, colors, selection, onSelect, onOpen,
         [sizeRef.current.w, sizeRef.current.h],
       ])
       .scaleExtent([0.5, 40])
-      .filter((event: MouseEvent | WheelEvent) => !event.shiftKey && !(event as MouseEvent).button)
+      .filter(
+        (event: MouseEvent | WheelEvent) =>
+          !event.shiftKey &&
+          !(event as MouseEvent).button &&
+          !(event.target as Element | null)?.closest?.("[data-no-zoom]"),
+      )
       .on("zoom", (event: { transform: ZoomTransform }) => setTransform(event.transform));
     zoomRef.current = behavior;
     select(svg).call(behavior);
@@ -178,7 +207,7 @@ export function MoodMapView({ map, visible, colors, selection, onSelect, onOpen,
   };
 
   const onPointerDown = (e: PointerEvent<SVGSVGElement>) => {
-    if (!e.shiftKey) return;
+    if (!e.shiftKey || !lassoEnabled) return;
     e.currentTarget.setPointerCapture?.(e.pointerId);
     setLasso([local(e)]);
     setHover(null);
@@ -260,6 +289,7 @@ export function MoodMapView({ map, visible, colors, selection, onSelect, onOpen,
             );
           })}
         </g>
+        {overlay?.({ x: scales.x, y: scales.y, width: size.w, height: size.h })}
         {lasso && <polygon className="lasso" points={lasso.map((p) => p.join(",")).join(" ")} />}
       </svg>
       {hover && (

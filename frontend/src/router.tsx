@@ -5,9 +5,11 @@ import {
   createRouter,
   type RouterHistory,
 } from "@tanstack/react-router";
+import { parsePathSearch } from "./features/path/anchors";
 import { Shell } from "./components/Shell";
 import { MapPage } from "./pages/MapPage";
 import { ListPage } from "./pages/ListPage";
+import { PathRoute } from "./pages/PathPage";
 import { TrackPage } from "./pages/TrackPage";
 
 const rootRoute = createRootRoute({ component: Shell });
@@ -19,7 +21,14 @@ const trackRoute = createRoute({
   component: TrackPage,
 });
 
-const routeTree = rootRoute.addChildren([mapRoute, listRoute, trackRoute]);
+const pathRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/path",
+  validateSearch: parsePathSearch,
+  component: PathRoute,
+});
+
+const routeTree = rootRoute.addChildren([mapRoute, listRoute, pathRoute, trackRoute]);
 
 /** Hash history so deep links work on static hosting (GitHub Pages). */
 export function createAppRouter(history: RouterHistory = createHashHistory()) {

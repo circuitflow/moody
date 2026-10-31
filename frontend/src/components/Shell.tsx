@@ -13,6 +13,7 @@ export function Shell() {
         <nav aria-label="Views">
           <Link to="/">Map</Link>
           <Link to="/list">List</Link>
+          <Link to="/path">Path</Link>
         </nav>
         <span className="spacer" />
         <ThemeToggle />
