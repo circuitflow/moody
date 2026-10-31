@@ -11,8 +11,9 @@ from pydantic import BaseModel
 from sqlalchemy import Engine
 
 from moody import __version__
-from moody.api import history, playlists, spotify, tracks
+from moody.api import history, jobs, playlists, spotify, tracks
 from moody.config import Settings, get_settings
+from moody.jobs.runner import ScanRunner, mark_interrupted
 from moody.store import init_db, session_factory
 from moody.streaming.spotify import PendingLogins
 
@@ -46,6 +47,7 @@ def create_app(
         own = engine is None
         db = engine or init_db(settings.database_url)
         app.state.sessions = session_factory(db)
+        mark_interrupted(app.state.sessions)
         try:
             yield
         finally:
@@ -58,6 +60,7 @@ def create_app(
     app.state.settings = settings
     app.state.http = client
     app.state.spotify_logins = PendingLogins()
+    app.state.scans = ScanRunner()
     app.state.spotify_error = None
     app.add_middleware(
         CORSMiddleware,
@@ -70,6 +73,7 @@ def create_app(
     app.include_router(playlists.router)
     app.include_router(spotify.router)
     app.include_router(history.router)
+    app.include_router(jobs.router)
     if settings.ui_dir is not None:
         # Mounted last so /api routes win; the UI uses hash routes, so "/" is the only page.
         app.mount("/", StaticFiles(directory=settings.ui_dir, html=True), name="ui")

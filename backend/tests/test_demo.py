@@ -1,4 +1,5 @@
 import json
+import re
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -217,6 +218,7 @@ def test_cli_select_needs_a_client_id(tmp_path: Path, monkeypatch: pytest.Monkey
     try:
         tsv = split_tsv(tmp_path / "s.tsv", [(1, ["happy"])])
         out = CliRunner().invoke(cli, ["demo", "select", str(tsv), str(tmp_path / "t.csv")])
-        assert out.exit_code != 0 and "client-id" in out.output
+        plain = re.sub(r"\x1b\[[0-9;]*m", "", out.output)  # Rich colours output on CI
+        assert out.exit_code != 0 and "client-id" in plain
     finally:
         get_settings.cache_clear()

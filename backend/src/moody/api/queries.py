@@ -62,7 +62,7 @@ def summary(track: Track) -> TrackSummary:
     )
 
 
-def meta(session: Session, *, audio: bool) -> Meta:
+def meta(session: Session, *, audio: bool, can_scan: bool = False) -> Meta:
     tracks = session.scalar(select(func.count()).select_from(Track).where(PRIMARY)) or 0
     analyzed = (
         session.scalar(
@@ -81,6 +81,7 @@ def meta(session: Session, *, audio: bool) -> Meta:
         octants=[OctantInfo(name=o.label, angle_deg=o.angle_deg) for o in Octant],
         map_fields=list(MAP_FIELDS),
         audio=audio,
+        can_scan=can_scan,
     )
 
 

@@ -15,7 +15,11 @@ class Settings(BaseSettings):
 
     data_dir: Path = _default_data_dir()
     models_dir: Path = Path.home() / ".cache" / "moody" / "models"
+    # The music folder `moody serve` may scan from the web app (POST /api/scan). Only this
+    # folder: the browser never names a path.
     library_path: Path | None = None
+    scan_workers: int = 2
+    fake_analyzer: bool = False  # development: scan without the models
     # A built frontend (frontend/dist) to serve at "/", next to the API.
     ui_dir: Path | None = None
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]

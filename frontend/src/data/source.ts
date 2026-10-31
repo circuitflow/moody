@@ -5,6 +5,7 @@
  */
 import type {
   Credit,
+  Job,
   Embeddings,
   HistoryImport,
   HistoryMood,
@@ -56,6 +57,11 @@ export interface DataSource {
   historyTop(period: Period): Promise<TopTrack[]>;
   /** The demo's track credits (CC licences, Jamendo links, stream URLs); empty when self-hosting. */
   credits(): Promise<Credit[]>;
+  /** Scan the configured library (self-hosted, when `meta.can_scan`). */
+  startScan(): Promise<Job>;
+  latestJob(): Promise<Job | null>;
+  /** Follow a job until it finishes; returns a function that stops listening. */
+  watchJob(id: number, onUpdate: (job: Job) => void): () => void;
 }
 
 const NOT_IN_DEMO = "Saved playlists need the self-hosted app.";
@@ -158,6 +164,22 @@ export class ApiDataSource implements DataSource {
   async credits(): Promise<Credit[]> {
     return [];
   }
+  async startScan() {
+    return (await (await send("POST", `${this.baseUrl}/api/scan`)).json()) as Job;
+  }
+  async latestJob() {
+    const jobs = await getJson<Job[]>(`${this.baseUrl}/api/jobs?limit=1`);
+    return jobs[0] ?? null;
+  }
+  watchJob(id: number, onUpdate: (job: Job) => void) {
+    const events = new EventSource(`${this.baseUrl}/api/jobs/${id}/events`);
+    events.addEventListener("job", (e) => {
+      const job = JSON.parse((e as MessageEvent<string>).data) as Job;
+      onUpdate(job);
+      if (job.status !== "running") events.close();
+    });
+    return () => events.close();
+  }
 }
 
 export class StaticDataSource implements DataSource {
@@ -231,6 +253,15 @@ export class StaticDataSource implements DataSource {
     // Bundles built without demo credits (e.g. a self-made export) have no credits.json.
     const resp = await fetch(`${this.dataUrl}/credits.json`);
     return resp.ok ? ((await resp.json()) as Credit[]) : [];
+  }
+  startScan(): Promise<Job> {
+    return Promise.reject(new Error(NOT_IN_DEMO));
+  }
+  async latestJob() {
+    return null;
+  }
+  watchJob() {
+    return () => {};
   }
 }
 

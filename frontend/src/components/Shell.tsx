@@ -1,6 +1,7 @@
 import { Link, Outlet } from "@tanstack/react-router";
 import { useDataSource } from "../data/context";
 import { useCredits, useMeta } from "../data/hooks";
+import { ScanControl } from "./ScanControl";
 import { ThemeToggle } from "./ThemeToggle";
 
 export function Shell() {
@@ -32,14 +33,17 @@ export function Shell() {
       <main>
         <Outlet />
       </main>
-      <footer className="shell-footer" role="status">
-        {meta.isPending && "Loading library…"}
-        {meta.isError && "Library unavailable"}
-        {meta.isSuccess &&
-          `${meta.data.analyzed} of ${meta.data.tracks} tracks analyzed · ` +
-            `${source.kind === "static" ? "demo" : "v" + meta.data.version} · ` +
-            `pipeline ${meta.data.pipeline_version}` +
-            (meta.data.duplicates ? ` · ${meta.data.duplicates} duplicate files hidden` : "")}
+      <footer className="shell-footer">
+        <span role="status">
+          {meta.isPending && "Loading library…"}
+          {meta.isError && "Library unavailable"}
+          {meta.isSuccess &&
+            `${meta.data.analyzed} of ${meta.data.tracks} tracks analyzed · ` +
+              `${source.kind === "static" ? "demo" : "v" + meta.data.version} · ` +
+              `pipeline ${meta.data.pipeline_version}` +
+              (meta.data.duplicates ? ` · ${meta.data.duplicates} duplicate files hidden` : "")}
+        </span>
+        {meta.data?.can_scan && <ScanControl />}
       </footer>
     </div>
   );

@@ -28,8 +28,9 @@ _index_lock = threading.Lock()
 
 
 @router.get("/meta", response_model=Meta)
-def meta(session: SessionDep) -> Meta:
-    return queries.meta(session, audio=True)
+def meta(request: Request, session: SessionDep) -> Meta:
+    library = request.app.state.settings.library_path
+    return queries.meta(session, audio=True, can_scan=library is not None and library.is_dir())
 
 
 @router.get("/tracks", response_model=TrackPage)

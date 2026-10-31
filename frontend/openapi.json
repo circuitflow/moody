@@ -968,6 +968,159 @@
           }
         }
       }
+    },
+    "/api/scan": {
+      "post": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Start Scan",
+        "description": "Scan MOODY_LIBRARY_PATH for new or changed music (409 while a scan runs).",
+        "operationId": "start_scan_api_scan_post",
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "List Jobs",
+        "description": "The most recent jobs, newest first (the UI resumes showing a running scan).",
+        "operationId": "list_jobs_api_jobs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 50,
+              "minimum": 1,
+              "default": 5,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JobOut"
+                  },
+                  "title": "Response List Jobs Api Jobs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Get Job",
+        "operationId": "get_job_api_jobs__job_id__get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/jobs/{job_id}/events": {
+      "get": {
+        "tags": [
+          "jobs"
+        ],
+        "summary": "Job Events",
+        "description": "Server-sent events: the job as JSON whenever it changes, until it finishes.",
+        "operationId": "job_events_api_jobs__job_id__events_get",
+        "parameters": [
+          {
+            "name": "job_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Job Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job updates (SSE)",
+            "content": {
+              "text/event-stream": {}
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1288,6 +1441,77 @@
         ],
         "title": "HistorySummary"
       },
+      "JobOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "running | completed | failed | cancelled"
+          },
+          "progress": {
+            "type": "integer",
+            "title": "Progress"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Tracks to analyze; 0 while files are still being indexed"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "status",
+          "progress",
+          "total",
+          "failed",
+          "error",
+          "created_at",
+          "finished_at"
+        ],
+        "title": "JobOut"
+      },
       "LastfmImportRequest": {
         "properties": {
           "user": {
@@ -1385,6 +1609,12 @@
             "type": "boolean",
             "title": "Audio",
             "description": "Whether /api/audio serves local files"
+          },
+          "can_scan": {
+            "type": "boolean",
+            "title": "Can Scan",
+            "description": "POST /api/scan is available (self-hosted)",
+            "default": false
           }
         },
         "type": "object",

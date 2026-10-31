@@ -26,3 +26,4 @@ export interface Credit extends Attribution {
   id: number;
   audio_url?: string | null;
 }
+export type Job = S["JobOut"];

@@ -153,7 +153,10 @@ def run_scan(
     reanalyze: bool = False,
     batch_size: int = 25,
     progress: ProgressFn | None = None,
+    job_id: int | None = None,
 ) -> ScanResult:
+    """Index ``root`` and analyze what's new. ``job_id`` reuses a job row created beforehand
+    (the API creates it so it can answer with the id before indexing starts)."""
     version = models.pipeline_version()
     with sessions() as session:
         report = ingest(root, session, limit=limit)
@@ -163,7 +166,9 @@ def run_scan(
         todo = tracks_to_analyze(session, root, version, reanalyze)
         if limit is not None:
             todo = todo[:limit]
-        job = Job(kind="scan", status="running", total=len(todo))
+        existing = session.get(Job, job_id) if job_id is not None else None
+        job = existing or Job(kind="scan", status="running")
+        job.total = len(todo)
         session.add(job)
         session.commit()
         result = ScanResult(job_id=job.id, ingest=report)

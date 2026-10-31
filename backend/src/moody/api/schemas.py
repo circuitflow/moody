@@ -135,6 +135,7 @@ class Meta(BaseModel):
     octants: list[OctantInfo]
     map_fields: list[str] = Field(description="Valid `field` values for /api/map/values")
     audio: bool = Field(description="Whether /api/audio serves local files")
+    can_scan: bool = Field(False, description="POST /api/scan is available (self-hosted)")
 
 
 class Neighbor(BaseModel):
@@ -256,3 +257,15 @@ class HistoryMood(BaseModel):
 
 class TopTrack(TrackSummary):
     plays: int
+
+
+class JobOut(BaseModel):
+    id: int
+    kind: str
+    status: str = Field(description="running | completed | failed | cancelled")
+    progress: int
+    total: int = Field(description="Tracks to analyze; 0 while files are still being indexed")
+    failed: int
+    error: str | None
+    created_at: datetime
+    finished_at: datetime | None

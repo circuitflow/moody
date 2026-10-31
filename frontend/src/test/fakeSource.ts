@@ -1,6 +1,7 @@
 /** A small deterministic in-memory library for component tests. */
 import type {
   Credit,
+  Job,
   Embeddings,
   HistoryImport,
   HistoryMood,
@@ -78,7 +79,7 @@ export class FakeSource implements DataSource {
       duplicates: 1,
       mood_tags: ["calm", "dark", "energetic", "happy", "heavy", "melancholic", "relaxing", "sad"],
       octants: OCTANTS.map((name, i) => ({ name, angle_deg: i * 45 })),
-      map_fields: ["bpm", "loudness", "tag:happy"], audio: true,
+      map_fields: ["bpm", "loudness", "tag:happy"], audio: true, can_scan: this.canScan,
     };
   }
   async map(): Promise<MoodMap> {
@@ -173,7 +174,23 @@ export class FakeSource implements DataSource {
   mood: Record<"week" | "hour", MoodBucket[]> = { week: [], hour: [] };
   top: TopTrack[] = [];
   moodRequests: string[] = [];
+  // Scans, simulated: `startScan` returns job 7; `jobUpdates` are delivered to watchers in order.
+  jobUpdates: Job[] = [];
+  runningJob: Job | null = null;
+  scansStarted = 0;
+  async startScan(): Promise<Job> {
+    this.scansStarted++;
+    return fakeJob({ status: "running", total: 0 });
+  }
+  async latestJob(): Promise<Job | null> {
+    return this.runningJob;
+  }
+  watchJob(_id: number, onUpdate: (job: Job) => void) {
+    const timers = this.jobUpdates.map((j, i) => setTimeout(() => onUpdate(j), 150 * (i + 1)));
+    return () => timers.forEach(clearTimeout);
+  }
   creditList: Credit[] = [];
+  canScan = false;
   async credits(): Promise<Credit[]> {
     return this.creditList;
   }
@@ -207,4 +224,11 @@ export class FakeSource implements DataSource {
       matched: p.tracks.length - unmatched.length, total: p.tracks.length, unmatched,
     };
   }
+}
+
+export function fakeJob(patch: Partial<Job>): Job {
+  return {
+    id: 7, kind: "scan", status: "running", progress: 0, total: 0, failed: 0, error: null,
+    created_at: "2026-11-01T10:00:00Z", finished_at: null, ...patch,
+  };
 }

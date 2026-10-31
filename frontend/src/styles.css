@@ -247,3 +247,6 @@ button.link { border: none; background: none; padding: 0; color: inherit; text-d
 .attribution { font-size: 0.8125rem; margin: 2px 0 0; }
 .credits-table { border-collapse: collapse; font-size: 0.875rem; width: 100%; }
 .credits-table th, .credits-table td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--border); }
+.shell-footer { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.scan-control { display: inline-flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--ink-2); }
+.scan-control progress { width: 140px; vertical-align: middle; accent-color: var(--series-1); }
