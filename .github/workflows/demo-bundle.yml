@@ -52,7 +52,8 @@ jobs:
       - name: Select tracks
         env:
           JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
-        run: uv run moody demo select ../split.tsv ../tracks.csv --n "${{ inputs.n }}" | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          $GITHUB_WORKSPACE/.github/scripts/annotate.sh select uv run moody demo select ../split.tsv ../tracks.csv --n "${{ inputs.n }}"
       - uses: actions/upload-artifact@v7
         with:
           name: tracks
@@ -89,10 +90,16 @@ jobs:
           key: essentia-models-${{ hashFiles('backend/src/moody/analysis/models.lock.json') }}
       - run: uv sync --frozen --extra analysis
       - run: uv run moody models pull --dir "$MOODY_MODELS_DIR"
+      - name: Show what the shard received
+        working-directory: .
+        run: |
+          echo "::notice title=workspace::$(ls -1 | tr '\n' ' ') | tracks.csv lines: $(wc -l < tracks.csv 2>/dev/null || echo missing) | shards input: '${{ inputs.shards }}'"
       - name: Download this shard's audio
-        run: uv run moody demo download ../tracks.csv ../audio --shard "${{ matrix.shard }}/${{ inputs.shards }}"
+        run: |
+          $GITHUB_WORKSPACE/.github/scripts/annotate.sh download uv run moody demo download ../tracks.csv ../audio --shard "${{ matrix.shard }}/${{ inputs.shards }}"
       - name: Analyze
-        run: uv run moody scan ../audio --workers 3 | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          $GITHUB_WORKSPACE/.github/scripts/annotate.sh scan uv run moody scan ../audio --workers 3
       - name: Check the shard
         run: |
           sqlite3 "$MOODY_DATA_DIR/moody.db" "select status, count(*) from tracks group by status" | tee -a "$GITHUB_STEP_SUMMARY"
@@ -125,7 +132,8 @@ jobs:
           path: ${{ github.workspace }}/artifacts
       - run: uv sync --frozen
       - name: Merge shards
-        run: uv run moody demo merge ../artifacts/tracks/tracks.csv ../artifacts/shard-*/moody.db | tee -a "$GITHUB_STEP_SUMMARY"
+        run: |
+          $GITHUB_WORKSPACE/.github/scripts/annotate.sh merge uv run moody demo merge ../artifacts/tracks/tracks.csv ../artifacts/shard-*/moody.db
       - name: Export the static bundle
         run: |
           uv run moody export-static ../bundle --demo ../artifacts/tracks/tracks.csv | tee -a "$GITHUB_STEP_SUMMARY"
