@@ -23,9 +23,10 @@ export function CreditsPage() {
         <a href="https://mtg.github.io/mtg-jamendo-dataset/" target="_blank" rel="noreferrer">
           MTG-Jamendo dataset
         </a>{" "}
-        (mood/theme test split), under Creative Commons licences that allow sharing with credit (
+        (mood/theme test split), under Creative Commons licences that allow non-commercial sharing with credit (
         {[...licences].map(([name, n]) => `${name}: ${n}`).join(", ")}). Audio streams from Jamendo; Moody
-        only stores the analysis.
+        only stores the analysis. Some licences are non-commercial (NC), so this demo's music is for
+        non-commercial use.
       </p>
       <table className="credits-table">
         <thead>

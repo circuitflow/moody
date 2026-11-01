@@ -2,8 +2,8 @@
 
 Pipeline (run in GitHub Actions, see ``.github/workflows/demo-bundle.yml``):
 
-1. ``select``: read the split, look tracks up on the Jamendo API, keep CC BY / CC BY-SA ones that
-   are still available, and pick a tag-stratified set (``tracks.csv``).
+1. ``select``: read the split, look tracks up on the Jamendo API, keep CC BY, BY-SA, BY-NC or
+   BY-NC-SA (no ND) ones that are still available, and pick a tag-stratified set (``tracks.csv``).
 2. ``download``: fetch one shard's MP3s (resumable). Audio is analyzed, never rehosted.
 3. ``moody scan`` per shard, then ``merge`` the shard databases and overwrite title, artist and
    album from Jamendo (the authoritative metadata for attribution).
@@ -31,7 +31,9 @@ from moody.store.models import Track
 
 API = "https://api.jamendo.com/v3.0/tracks/"
 TAG_PREFIX = "mood/theme---"
-ALLOWED_LICENSES = ("by", "by-sa")  # NC and ND licenses can't go in a public showcase
+# Attribution licences, non-commercial ones included: Moody is a non-commercial project (its
+# Essentia models are CC BY-NC-SA too). No ND: no-derivatives tracks are left out.
+ALLOWED_LICENSES = ("by", "by-sa", "by-nc", "by-nc-sa")
 MIN_DURATION_S = 60
 MAX_DURATION_S = 600
 LOOKUP_BATCH = 50  # the API's limit on values for one parameter

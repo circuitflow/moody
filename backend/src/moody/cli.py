@@ -435,7 +435,8 @@ def demo_select(
     n: Annotated[int, typer.Option(help="How many tracks to pick.")] = 1500,
     seed: Annotated[int, typer.Option()] = 0,
 ) -> None:
-    """Pick CC BY / CC BY-SA tracks from the split, stratified by mood/theme tag."""
+    """Pick CC BY, BY-SA, BY-NC or BY-NC-SA (no ND) tracks from the split, stratified by
+    mood/theme tag."""
     import httpx2
 
     from moody import demo
@@ -452,7 +453,7 @@ def demo_select(
     licences = ", ".join(f"{k} {v}" for k, v in report.licenses.most_common())
     typer.echo(
         f"split: {report.in_split} tracks; still on Jamendo: {report.available} ({licences}); "
-        f"CC BY or BY-SA, 1-10 min: {report.licensed}; selected: {len(chosen)} -> {out}"
+        f"allowed licence, 1-10 min: {report.licensed}; selected: {len(chosen)} -> {out}"
     )
 
 

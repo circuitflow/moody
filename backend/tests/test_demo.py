@@ -27,6 +27,8 @@ LICENSES = {
     "by-sa": "http://creativecommons.org/licenses/by-sa/4.0/",
     "by-nc": "http://creativecommons.org/licenses/by-nc/3.0/",
     "by-nc-nd": "http://creativecommons.org/licenses/by-nc-nd/3.0/",
+    "by-nc-sa": "http://creativecommons.org/licenses/by-nc-sa/3.0/",
+    "by-nd": "http://creativecommons.org/licenses/by-nd/4.0/",
 }
 
 
@@ -104,8 +106,10 @@ def test_load_split_and_licences(tmp_path: Path) -> None:
 def test_eligible_tracks_filters_licence_length_and_availability(tmp_path: Path) -> None:
     rows = [(i, ["happy"]) for i in range(1, 251)]
     catalog = {i: item(i) for i in range(1, 251)}
-    catalog[2] = item(2, "by-nc")
-    catalog[3] = item(3, "by-nc-nd")
+    catalog[2] = item(2, "by-nc")  # non-commercial: allowed
+    catalog[3] = item(3, "by-nc-nd")  # no derivatives: left out
+    catalog[10] = item(10, "by-nd")
+    catalog[11] = item(11, "by-nc-sa")
     catalog[4] = item(4, "by-sa")
     catalog[5] = item(5, duration=30)  # too short
     catalog[6] = item(6, duration=900)  # too long
@@ -117,7 +121,7 @@ def test_eligible_tracks_filters_licence_length_and_availability(tmp_path: Path)
     found, report = demo.eligible_tracks(jam, demo.load_split(split_tsv(tmp_path / "s.tsv", rows)))
     ids = {t.jamendo_id for t in found}
     assert fake.lookups == 5  # 250 ids in batches of 50
-    assert {2, 3, 5, 6, 7, 8, 9999}.isdisjoint(ids) and {1, 4} <= ids
+    assert {3, 5, 6, 7, 8, 10, 9999}.isdisjoint(ids) and {1, 2, 4, 11} <= ids
     assert (report.in_split, report.available, report.licensed) == (250, 249, 244)
     assert report.licenses["by-nc"] == 1
     sa = next(t for t in found if t.jamendo_id == 4)

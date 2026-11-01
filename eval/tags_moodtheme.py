@@ -1,8 +1,8 @@
 """Mood/theme tag accuracy of the Discogs-EffNet MTG-Jamendo head on the demo tracks.
 
-The demo tracks are a CC BY / CC BY-SA, tag-stratified subset of the MTG-Jamendo mood/theme
-split-0 test set, so this is a held-out evaluation (the head was trained on the training split),
-but on a subset: the report says how many tracks and how common each tag is.
+The demo tracks are a CC BY, BY-SA, BY-NC or BY-NC-SA (no ND), tag-stratified subset of the
+MTG-Jamendo mood/theme split-0 test set, so this is a held-out evaluation (the head was trained
+on the training split), but on a subset: the report says how many tracks and how common each tag is.
 
     MOODY_DATA_DIR=<merged demo data> uv run python ../eval/tags_moodtheme.py tracks.csv out.json
 
@@ -57,7 +57,8 @@ def evaluate(truth: dict[int, set[str]], preds: dict[int, dict[str, float]]) -> 
         else None,
         "per_tag": sorted(per_tag, key=lambda t: -float(t["roc_auc"])),  # type: ignore[arg-type]
         "note": (
-            "Held-out MTG-Jamendo mood/theme split-0 test tracks, restricted to CC BY / CC BY-SA "
+            "Held-out MTG-Jamendo mood/theme split-0 test tracks, restricted to CC BY, BY-SA, "
+            "BY-NC or BY-NC-SA "
             "and stratified by tag. ROC-AUC is independent of how common a tag is; PR-AUC is not "
             "(compare it with the prevalence)."
         ),

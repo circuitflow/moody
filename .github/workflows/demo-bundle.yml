@@ -1,4 +1,4 @@
-# Builds the public demo bundle: CC BY / CC BY-SA tracks from the MTG-Jamendo mood/theme test
+# Builds the public demo bundle: Creative Commons (BY, BY-SA, BY-NC, BY-NC-SA) tracks from the MTG-Jamendo mood/theme test
 # split, analyzed with the real models, exported as static JSON with credits, and published as a
 # release asset (demo-bundle-YYYYMMDD-HHMM). The Pages workflow deploys the latest one.
 # Audio is downloaded from Jamendo for analysis only; it is never committed or rehosted.
@@ -161,6 +161,6 @@ jobs:
           gh release create "$tag" ../demo-bundle.tar.gz \
             --repo "${{ github.repository }}" \
             --title "Demo bundle $(date -u +%Y-%m-%d)" \
-            --notes "Static data for the GitHub Pages demo: $n CC BY / CC BY-SA tracks from the MTG-Jamendo mood/theme test split, analyzed at commit ${{ github.sha }}. Credits are in credits.json and tracks.csv." \
+            --notes "Static data for the GitHub Pages demo: $n Creative Commons tracks (BY, BY-SA, BY-NC, BY-NC-SA; non-commercial use) from the MTG-Jamendo mood/theme test split, analyzed at commit ${{ github.sha }}. Credits are in credits.json and tracks.csv." \
             --prerelease --latest=false
           echo "Published $tag" >> "$GITHUB_STEP_SUMMARY"

@@ -222,7 +222,7 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
 ## 12. Demo, deployment and evaluation
 
 - **Demo bundle** (`.github/workflows/demo-bundle.yml`, manual; needs the `JAMENDO_CLIENT_ID` secret):
-  - `moody demo select` looks up the MTG-Jamendo mood/theme split-0 **test** tracks on the Jamendo API, keeps CC BY / CC BY-SA tracks of 1–10 minutes that are still online, and picks about 1,500, stratified by tag (rarest first).
+  - `moody demo select` looks up the MTG-Jamendo mood/theme split-0 **test** tracks on the Jamendo API, keeps CC BY, BY-SA, BY-NC or BY-NC-SA (no ND) tracks of 1–10 minutes that are still online, and picks about 1,500, stratified by tag (rarest first).
   - Six shards download their MP3s (`moody demo download`, resumable) and run `moody scan` with the real models; a shard fails if more than 5 % of its tracks don't analyze.
   - `moody demo merge` combines the shard databases (Jamendo's titles and artists win), `moody export-static --demo` writes the bundle, and it's published as a `demo-bundle-YYYYMMDD-HHMM` release asset (a prerelease, never "latest"). Audio is analyzed, never committed or rehosted; the demo streams it from Jamendo.
 - **GitHub Pages** (`pages.yml`, on `v*` tags or manually): downloads the newest bundle, runs a Playwright smoke test against it, builds in static mode and deploys.
@@ -232,7 +232,7 @@ The OpenAPI schema is exported to `frontend/openapi.json`, and the frontend type
   - Native: `uv run moody serve` plus `npm run dev`.
 - **Evaluation (`eval/`):**
   - V/A regression on the DEAM test split: Pearson r, R² and CCC for the chosen head, plus a comparison of the emomusic and DEAM heads.
-  - Tag ROC-AUC/PR-AUC on the demo tracks, which are held-out MTG-Jamendo moodtheme split-0 test tracks (a CC BY / BY-SA, tag-stratified subset; prevalence is reported next to PR-AUC). Computed by `eval/tags_moodtheme.py` in the bundle job and pushed to the `eval/tags-moodtheme` branch.
+  - Tag ROC-AUC/PR-AUC on the demo tracks, which are held-out MTG-Jamendo moodtheme split-0 test tracks (a CC BY / BY-SA / BY-NC / BY-NC-SA, tag-stratified subset; prevalence is reported next to PR-AUC). Computed by `eval/tags_moodtheme.py` in the bundle job and pushed to the `eval/tags-moodtheme` branch.
   - 2007 vs 2026 on DEAM: exact octant, within one octant and mean angle error for the 2007 tree and the 2026 head against the octant of listeners' ratings, with a most-common-octant baseline and a subset of clips rated clearly away from neutral (`moody.evaluation.octant_report`, part of `eval-deam.yml`).
   - `eval/render.py` writes the README's "How well it works" section and the About page's data.
   - Results go to `eval/results/*.json`, and a script renders the README table.
