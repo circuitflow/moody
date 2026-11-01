@@ -19,7 +19,7 @@ const full: Evaluation = {
     },
   },
   tags: {
-    tracks: 1480, tags_evaluated: 50, macro_roc_auc: 0.77, macro_pr_auc: 0.14,
+    tracks: 1480, tags_evaluated: 50, macro_roc_auc: 0.77, macro_pr_auc: 0.14, min_positives_listed: 20,
     best: [{ tag: "christmas", positives: 40, prevalence: 0.03, roc_auc: 0.95, pr_auc: 0.5 }],
     worst: [{ tag: "fun", positives: 30, prevalence: 0.02, roc_auc: 0.6, pr_auc: 0.04 }],
   },

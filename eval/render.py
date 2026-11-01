@@ -21,6 +21,7 @@ RESULTS = ROOT / "eval" / "results"
 ABOUT = ROOT / "frontend" / "src" / "features" / "about" / "evaluation.json"
 README = ROOT / "README.md"
 START, END = "<!-- eval:start -->", "<!-- eval:end -->"
+MIN_POSITIVES_LISTED = 20
 
 
 def _load(name: str) -> dict[str, Any] | None:
@@ -49,12 +50,14 @@ def summarize() -> dict[str, Any]:
         }
     tags = _load("tags_moodtheme.json")
     if tags and tags.get("per_tag"):
-        per_tag = tags["per_tag"]
+        # Best/worst only among tags with enough examples: an AUC from 5 positives is mostly noise.
+        per_tag = [t for t in tags["per_tag"] if t["positives"] >= MIN_POSITIVES_LISTED]
         out["tags"] = {
             "tracks": tags["tracks"],
             "tags_evaluated": tags["tags_evaluated"],
             "macro_roc_auc": tags["macro_roc_auc"],
             "macro_pr_auc": tags["macro_pr_auc"],
+            "min_positives_listed": MIN_POSITIVES_LISTED,
             "best": per_tag[:5],
             "worst": per_tag[-5:][::-1],
         }
@@ -122,7 +125,8 @@ def markdown(s: dict[str, Any]) -> str:
         lines += [
             f"**Mood/theme tags** on {t['tracks']} held-out MTG-Jamendo test tracks "
             f"({t['tags_evaluated']} tags): macro ROC-AUC {t['macro_roc_auc']:.2f}, "
-            f"macro PR-AUC {t['macro_pr_auc']:.2f}. Best: "
+            f"macro PR-AUC {t['macro_pr_auc']:.2f}. Among tags with at least "
+            f"{t['min_positives_listed']} tracks, best: "
             + ", ".join(f"{x['tag']} {x['roc_auc']:.2f}" for x in t["best"])
             + "; hardest: "
             + ", ".join(f"{x['tag']} {x['roc_auc']:.2f}" for x in t["worst"])

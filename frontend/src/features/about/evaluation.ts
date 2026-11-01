@@ -36,6 +36,7 @@ export interface Evaluation {
     tags_evaluated: number;
     macro_roc_auc: number;
     macro_pr_auc: number;
+    min_positives_listed: number;
     best: TagScore[];
     worst: TagScore[];
   } | null;

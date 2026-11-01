@@ -88,6 +88,8 @@ Predicted valence and arousal correlate at +0.80, against +0.55 between listener
 
 Always guessing the most common octant: 28%; picking at random: 12.5%, with a 90° mean angle error. The 2007 tree runs on its five features re-derived with Essentia (CLAM and The Echo Nest are gone), and those mappings aren't yet calibrated against the thesis songs, so its row measures the port as much as the 2007 model.
 
+**Mood/theme tags** on 1152 held-out MTG-Jamendo test tracks (54 tags): macro ROC-AUC 0.74, macro PR-AUC 0.13. Among tags with at least 20 tracks, best: epic 0.90, children 0.88, christmas 0.87, summer 0.87, motivational 0.87; hardest: slow 0.49, film 0.49, nature 0.50, inspiring 0.53, documentary 0.57.
+
 Details: [`eval/results/`](eval/results/).
 <!-- eval:end -->
 

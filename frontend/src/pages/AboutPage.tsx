@@ -108,7 +108,8 @@ export function AboutPage({ data = evaluation }: { data?: Evaluation }) {
               </tbody>
             </table>
             <p className="note muted">
-              The five easiest and five hardest of {tags.tags_evaluated} tags. ROC-AUC doesn't depend on how common a tag
+              The five easiest and five hardest tags among those with at least {tags.min_positives_listed} tracks (of{" "}
+              {tags.tags_evaluated} evaluated; macro averages use all of them). ROC-AUC doesn't depend on how common a tag
               is; compare PR-AUC with the share of tracks.
             </p>
           </>

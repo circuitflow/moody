@@ -65,5 +65,85 @@
       "note": "Octants around the neutral point of each scale (DEAM 5 on 1-9; Moody 0 on -1..1). The 2026 head was trained on DEAM, so its numbers are in-domain and optimistic. The 2007 tree never saw DEAM, and runs on its five features re-derived with Essentia (the original CLAM and Echo Nest tools are gone); those mappings are not yet calibrated against the thesis songs, so this measures the port as much as the 2007 model."
     }
   },
-  "tags": null
+  "tags": {
+    "tracks": 1152,
+    "tags_evaluated": 54,
+    "macro_roc_auc": 0.7439,
+    "macro_pr_auc": 0.1315,
+    "min_positives_listed": 20,
+    "best": [
+      {
+        "tag": "epic",
+        "positives": 38,
+        "prevalence": 0.033,
+        "roc_auc": 0.9003,
+        "pr_auc": 0.4685
+      },
+      {
+        "tag": "children",
+        "positives": 77,
+        "prevalence": 0.0668,
+        "roc_auc": 0.8825,
+        "pr_auc": 0.4083
+      },
+      {
+        "tag": "christmas",
+        "positives": 52,
+        "prevalence": 0.0451,
+        "roc_auc": 0.873,
+        "pr_auc": 0.3429
+      },
+      {
+        "tag": "summer",
+        "positives": 22,
+        "prevalence": 0.0191,
+        "roc_auc": 0.8681,
+        "pr_auc": 0.1381
+      },
+      {
+        "tag": "motivational",
+        "positives": 27,
+        "prevalence": 0.0234,
+        "roc_auc": 0.8676,
+        "pr_auc": 0.2926
+      }
+    ],
+    "worst": [
+      {
+        "tag": "slow",
+        "positives": 57,
+        "prevalence": 0.0495,
+        "roc_auc": 0.4872,
+        "pr_auc": 0.0461
+      },
+      {
+        "tag": "film",
+        "positives": 92,
+        "prevalence": 0.0799,
+        "roc_auc": 0.4932,
+        "pr_auc": 0.1173
+      },
+      {
+        "tag": "nature",
+        "positives": 24,
+        "prevalence": 0.0208,
+        "roc_auc": 0.4965,
+        "pr_auc": 0.0197
+      },
+      {
+        "tag": "inspiring",
+        "positives": 53,
+        "prevalence": 0.046,
+        "roc_auc": 0.527,
+        "pr_auc": 0.0842
+      },
+      {
+        "tag": "documentary",
+        "positives": 45,
+        "prevalence": 0.0391,
+        "roc_auc": 0.5674,
+        "pr_auc": 0.045
+      }
+    ]
+  }
 }
