@@ -35,6 +35,7 @@ jobs:
         working-directory: backend
     steps:
       - name: Check for the Jamendo client id
+        working-directory: .  # runs before checkout, so backend/ doesn't exist yet
         env:
           JAMENDO_CLIENT_ID: ${{ secrets.JAMENDO_CLIENT_ID }}
         run: |
