@@ -57,7 +57,14 @@ class FakeJamendo:
                 )
             self.lookups += 1
             ids = [int(i) for i in q["id"][0].split()]
-            assert len(ids) <= 100
+            if len(ids) > 50:  # the real API's limit
+                msg = (
+                    "The maximum number of multiple values a parameter can receive is: 50. "
+                    f"We received {len(ids)}."
+                )
+                return httpx2.Response(
+                    200, json={"headers": {"status": "failed", "error_message": msg}}
+                )
             results = [self.catalog[i] for i in ids if i in self.catalog]
             return httpx2.Response(200, json={"headers": {"status": "success"}, "results": results})
         url = str(request.url)
@@ -109,7 +116,7 @@ def test_eligible_tracks_filters_licence_length_and_availability(tmp_path: Path)
     jam = demo.Jamendo(httpx2.Client(transport=httpx2.MockTransport(fake)), "cid")
     found, report = demo.eligible_tracks(jam, demo.load_split(split_tsv(tmp_path / "s.tsv", rows)))
     ids = {t.jamendo_id for t in found}
-    assert fake.lookups == 3  # 250 ids in batches of 100
+    assert fake.lookups == 5  # 250 ids in batches of 50
     assert {2, 3, 5, 6, 7, 8, 9999}.isdisjoint(ids) and {1, 4} <= ids
     assert (report.in_split, report.available, report.licensed) == (250, 249, 244)
     assert report.licenses["by-nc"] == 1

@@ -33,6 +33,7 @@ jobs:
     defaults:
       run:
         working-directory: backend
+        shell: bash  # explicit bash adds -o pipefail, so `cmd | tee` can't hide a failure
     steps:
       - name: Check for the Jamendo client id
         working-directory: .  # runs before checkout, so backend/ doesn't exist yet
@@ -75,6 +76,7 @@ jobs:
     defaults:
       run:
         working-directory: backend
+        shell: bash  # explicit bash adds -o pipefail, so `cmd | tee` can't hide a failure
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7
@@ -122,6 +124,7 @@ jobs:
     defaults:
       run:
         working-directory: backend
+        shell: bash  # explicit bash adds -o pipefail, so `cmd | tee` can't hide a failure
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v7

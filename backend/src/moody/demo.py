@@ -34,7 +34,7 @@ TAG_PREFIX = "mood/theme---"
 ALLOWED_LICENSES = ("by", "by-sa")  # NC and ND licenses can't go in a public showcase
 MIN_DURATION_S = 60
 MAX_DURATION_S = 600
-LOOKUP_BATCH = 100
+LOOKUP_BATCH = 50  # the API's limit on values for one parameter
 CSV_FIELDS = (
     "jamendo_id",
     "title",
@@ -117,7 +117,7 @@ class Jamendo:
         self.sleep = sleep
 
     def tracks(self, ids: Sequence[int]) -> list[dict[str, Any]]:
-        """Metadata for up to 100 tracks; unavailable tracks are simply missing."""
+        """Metadata for up to ``LOOKUP_BATCH`` tracks; unavailable tracks are simply missing."""
         params: dict[str, str | int] = {
             "client_id": self.client_id,
             "format": "json",
